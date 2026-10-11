@@ -1,9 +1,10 @@
 # Pokémon Data Explorer
 
-A full-stack app with a C# backend API and Vue frontend that fetches Pokémon data from [PokéAPI](https://pokeapi.co/).
+Planning-first project to build a C# backend integrated with PokéAPI and a Vue frontend.
 
 ## Stack
 - Backend: ASP.NET Core Web API
+- External API integration: [PokéAPI](https://pokeapi.co/)
 - Frontend: Vue 3 + Vite + TypeScript
 
 ## Features (MVP)
@@ -12,6 +13,10 @@ A full-stack app with a C# backend API and Vue frontend that fetches Pokémon da
 - Pokémon detail panel (types, abilities, stats, sprite)
 - Backend caching and retry/timeout handling for PokéAPI calls
 - Loading/error states in frontend
+
+## Incremental planning docs
+- `/home/runner/work/csharp1/csharp1/docs/roadmap.md`
+- `/home/runner/work/csharp1/csharp1/docs/pr-plan.md`
 
 ## Project Structure
 - `/home/runner/work/csharp1/csharp1/PokemonApi` – C# backend
