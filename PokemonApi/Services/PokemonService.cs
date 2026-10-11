@@ -43,7 +43,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache) : 
     {
         var cacheKey = $"pokemon-page:{page}:{size}";
 
-        if (cache.TryGetValue<PokemonPageDto>(cacheKey, out var cached))
+        if (cache.TryGetValue<PokemonPageDto>(cacheKey, out var cached) && cached is not null)
         {
             return cached;
         }
