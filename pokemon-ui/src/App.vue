@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { fetchPokemonDetail, fetchPokemonPage } from '@/services/pokemonApi'
 import type { PokemonDetail, PokemonSummary } from '@/types/pokemon'
 
@@ -14,9 +14,40 @@ const detailLoading = ref(false)
 const listError = ref('')
 const detailError = ref('')
 const search = ref('')
+const filterText = ref('')
+const sortBy = ref<'id-asc' | 'id-desc' | 'name-asc' | 'name-desc'>('id-asc')
+const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
+const debounceDelayMs = 350
+const suppressDebouncedSearch = ref(false)
 
 const hasPrev = computed(() => currentPage.value > 1)
 const hasNext = computed(() => currentPage.value < totalPages.value)
+const filteredAndSortedList = computed(() => {
+  const normalizedFilter = filterText.value.trim().toLowerCase()
+  let items = list.value
+
+  if (normalizedFilter) {
+    items = items.filter((pokemon) => pokemon.name.toLowerCase().includes(normalizedFilter))
+  }
+
+  const sorted = [...items]
+  switch (sortBy.value) {
+    case 'id-desc':
+      sorted.sort((a, b) => b.id - a.id)
+      break
+    case 'name-asc':
+      sorted.sort((a, b) => a.name.localeCompare(b.name))
+      break
+    case 'name-desc':
+      sorted.sort((a, b) => b.name.localeCompare(a.name))
+      break
+    default:
+      sorted.sort((a, b) => a.id - b.id)
+      break
+  }
+
+  return sorted
+})
 
 async function loadPage(page: number): Promise<void> {
   listLoading.value = true
@@ -57,12 +88,22 @@ async function searchPokemon(): Promise<void> {
     return
   }
 
+  if (debounceHandle.value) {
+    clearTimeout(debounceHandle.value)
+    debounceHandle.value = null
+  }
+
   await loadPokemon(query)
 }
 
 async function viewPokemon(id: number): Promise<void> {
+  suppressDebouncedSearch.value = true
   search.value = `${id}`
-  await loadPokemon(`${id}`)
+  try {
+    await loadPokemon(`${id}`)
+  } finally {
+    suppressDebouncedSearch.value = false
+  }
 }
 
 async function prevPage(): Promise<void> {
@@ -77,6 +118,34 @@ async function nextPage(): Promise<void> {
 
 onMounted(async () => {
   await loadPage(1)
+})
+
+watch(search, (value) => {
+  if (suppressDebouncedSearch.value) {
+    return
+  }
+
+  const query = value.trim()
+  detailError.value = ''
+
+  if (debounceHandle.value) {
+    clearTimeout(debounceHandle.value)
+    debounceHandle.value = null
+  }
+
+  if (!query) {
+    return
+  }
+
+  debounceHandle.value = setTimeout(() => {
+    void loadPokemon(query)
+  }, debounceDelayMs)
+})
+
+onUnmounted(() => {
+  if (debounceHandle.value) {
+    clearTimeout(debounceHandle.value)
+  }
 })
 </script>
 
@@ -103,13 +172,28 @@ onMounted(async () => {
           <h2>Pokémon List</h2>
           <p>{{ totalCount }} total</p>
         </header>
+        <div class="controls">
+          <input
+            v-model="filterText"
+            type="text"
+            placeholder="Filter list by name"
+            aria-label="Filter Pokémon list"
+          >
+          <select v-model="sortBy" aria-label="Sort Pokémon list">
+            <option value="id-asc">ID (Ascending)</option>
+            <option value="id-desc">ID (Descending)</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+          </select>
+        </div>
 
         <p v-if="listLoading" class="state">Loading list...</p>
         <p v-else-if="listError" class="error">{{ listError }}</p>
         <p v-else-if="list.length === 0" class="state">No Pokémon found.</p>
+        <p v-else-if="filteredAndSortedList.length === 0" class="state">No Pokémon match current filter.</p>
 
         <ul v-else class="list">
-          <li v-for="pokemon in list" :key="pokemon.id">
+          <li v-for="pokemon in filteredAndSortedList" :key="pokemon.id">
             <button class="item" type="button" @click="viewPokemon(pokemon.id)">
               <img :src="pokemon.spriteUrl" :alt="pokemon.name">
               <span>#{{ pokemon.id }} {{ pokemon.name }}</span>
