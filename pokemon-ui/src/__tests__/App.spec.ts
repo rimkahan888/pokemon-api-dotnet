@@ -177,6 +177,81 @@ describe('App.vue', () => {
     expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('pikachu')
     expect(wrapper.text()).toContain('#25 pikachu')
   })
+
+  it('requests the next and previous pages from the pager', async () => {
+    mockedFetchPokemonPage
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 21,
+        totalPages: 2,
+        items: [],
+      })
+      .mockResolvedValueOnce({
+        page: 2,
+        size: 20,
+        totalCount: 21,
+        totalPages: 2,
+        items: [],
+      })
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 21,
+        totalPages: 2,
+        items: [],
+      })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('.pager button:last-child').trigger('click')
+    await flush()
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(2, 2, 20)
+    expect(wrapper.text()).toContain('Page 2 of 2')
+
+    await wrapper.get('.pager button:first-child').trigger('click')
+    await flush()
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(3, 1, 20)
+    expect(wrapper.text()).toContain('Page 1 of 2')
+  })
+
+  it('disables pagination controls at page boundaries and while loading', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 21,
+      totalPages: 2,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    expect((wrapper.get('.pager button:first-child').element as HTMLButtonElement).disabled).toBe(true)
+    expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(false)
+
+    mockedFetchPokemonPage.mockReturnValue(new Promise(() => {}))
+    await wrapper.get('.pager button:last-child').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect((wrapper.get('.pager button:first-child').element as HTMLButtonElement).disabled).toBe(true)
+    expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('disables the next control on the last page', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 2,
+      size: 20,
+      totalCount: 21,
+      totalPages: 2,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+
+    expect((wrapper.get('.pager button:first-child').element as HTMLButtonElement).disabled).toBe(false)
+    expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(true)
+  })
 })
 
 async function flush(): Promise<void> {
