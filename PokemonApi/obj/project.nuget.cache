@@ -1,15 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "RW0cT89Jn8A=",
+  "dgSpecHash": "usjobOApwq8=",
   "success": true,
   "projectFilePath": "/home/runner/work/csharp1/csharp1/PokemonApi/PokemonApi.csproj",
   "expectedPackageFiles": [
-    "/tmp/codeql-scratch-1aa550278c8d051a/dbs/csharp/working/packages/microsoft.aspnetcore.openapi/10.0.12/microsoft.aspnetcore.openapi.10.0.12.nupkg.sha512",
-    "/tmp/codeql-scratch-1aa550278c8d051a/dbs/csharp/working/packages/microsoft.openapi/2.12.0/microsoft.openapi.2.12.0.nupkg.sha512",
-    "/tmp/codeql-scratch-1aa550278c8d051a/dbs/csharp/working/packages/system.text.json/8.0.5/system.text.json.8.0.5.nupkg.sha512",
-    "/tmp/codeql-scratch-1aa550278c8d051a/dbs/csharp/working/packages/microsoft.netcore.app.ref/10.0.12/microsoft.netcore.app.ref.10.0.12.nupkg.sha512",
-    "/tmp/codeql-scratch-1aa550278c8d051a/dbs/csharp/working/packages/microsoft.aspnetcore.app.ref/10.0.12/microsoft.aspnetcore.app.ref.10.0.12.nupkg.sha512",
-    "/tmp/codeql-scratch-1aa550278c8d051a/dbs/csharp/working/packages/microsoft.netcore.app.host.linux-x64/10.0.12/microsoft.netcore.app.host.linux-x64.10.0.12.nupkg.sha512"
+    "/home/runner/.nuget/packages/microsoft.aspnetcore.openapi/10.0.12/microsoft.aspnetcore.openapi.10.0.12.nupkg.sha512",
+    "/home/runner/.nuget/packages/microsoft.openapi/2.12.0/microsoft.openapi.2.12.0.nupkg.sha512"
   ],
   "logs": []
 }
