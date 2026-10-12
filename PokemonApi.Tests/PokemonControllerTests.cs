@@ -32,6 +32,21 @@ public class PokemonControllerTests
     }
 
     [Fact]
+    public async Task GetPokemon_ReturnsOk_WithServiceDto()
+    {
+        var expected = new PokemonDetailDto(25, "pikachu", ["electric"], ["static"], [], "sprite");
+        var controller = new PokemonController(new FakePokemonService
+        {
+            GetPokemonAsyncImpl = (_, _) => Task.FromResult<PokemonDetailDto?>(expected)
+        });
+
+        var result = await controller.GetPokemon("pikachu", CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, okResult.Value);
+    }
+
+    [Fact]
     public async Task GetPokemon_ReturnsServiceUnavailable_WhenUpstreamFails()
     {
         var controller = new PokemonController(new FakePokemonService
@@ -55,6 +70,21 @@ public class PokemonControllerTests
 
         Assert.IsType<BadRequestObjectResult>(badPage);
         Assert.IsType<BadRequestObjectResult>(badSize);
+    }
+
+    [Fact]
+    public async Task GetPokemonPage_ReturnsOk_WithServiceDto()
+    {
+        var expected = new PokemonPageDto(2, 10, 20, 2, [new PokemonSummaryDto(25, "pikachu", "sprite")]);
+        var controller = new PokemonController(new FakePokemonService
+        {
+            GetPokemonPageAsyncImpl = (_, _, _) => Task.FromResult(expected)
+        });
+
+        var result = await controller.GetPokemonPage(2, 10, CancellationToken.None);
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, okResult.Value);
     }
 
     [Fact]
