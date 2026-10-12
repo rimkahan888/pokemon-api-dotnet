@@ -97,6 +97,32 @@ public class PokemonApiServiceTests
         Assert.Contains("out of range", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task GetPokemonAsync_ReturnsNull_WithoutCallingClient_ForBlankInput()
+    {
+        var client = new FakePokeApiClient();
+        var service = CreateService(client);
+
+        var result = await service.GetPokemonAsync("   ", CancellationToken.None);
+
+        Assert.Null(result);
+        Assert.Equal(0, client.GetPokemonCallCount);
+    }
+
+    [Fact]
+    public async Task GetPokemonAsync_DoesNotCacheNotFoundResults()
+    {
+        var client = new FakePokeApiClient { PokemonToReturn = null };
+        var service = CreateService(client);
+
+        var first = await service.GetPokemonAsync("missingno", CancellationToken.None);
+        var second = await service.GetPokemonAsync("missingno", CancellationToken.None);
+
+        Assert.Null(first);
+        Assert.Null(second);
+        Assert.Equal(2, client.GetPokemonCallCount);
+    }
+
     private static PokemonService CreateService(IPokeApiClient client)
     {
         var cache = new MemoryCache(new MemoryCacheOptions());
