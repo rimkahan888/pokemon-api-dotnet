@@ -13,6 +13,7 @@ const mockedFetchPokemonDetail = vi.mocked(pokemonApi.fetchPokemonDetail)
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.useRealTimers()
 })
 
 describe('App.vue', () => {
@@ -99,6 +100,211 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('#25 pikachu')
     expect(wrapper.text()).toContain('Types: electric')
     expect(wrapper.text()).toContain('Abilities: static')
+  })
+
+  it('searches for a Pokémon when the search form is submitted', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('input[aria-label="Search Pokémon"]').setValue('pikachu')
+    await wrapper.get('form').trigger('submit')
+    await flush()
+
+    expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('pikachu')
+    expect(wrapper.text()).toContain('#25 pikachu')
+  })
+
+  it('shows a validation message when search is submitted empty', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.text()).toContain('Enter a Pokémon name or ID.')
+    expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
+  })
+
+  it('searches after the debounce delay when the query changes', async () => {
+    vi.useFakeTimers()
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('input[aria-label="Search Pokémon"]').setValue('pikachu')
+    await vi.advanceTimersByTimeAsync(349)
+
+    expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+    await flush()
+
+    expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('pikachu')
+    expect(wrapper.text()).toContain('#25 pikachu')
+  })
+
+  it('requests the next and previous pages from the pager', async () => {
+    mockedFetchPokemonPage
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 21,
+        totalPages: 2,
+        items: [],
+      })
+      .mockResolvedValueOnce({
+        page: 2,
+        size: 20,
+        totalCount: 21,
+        totalPages: 2,
+        items: [],
+      })
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 21,
+        totalPages: 2,
+        items: [],
+      })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('.pager button:last-child').trigger('click')
+    await flush()
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(2, 2, 20)
+    expect(wrapper.text()).toContain('Page 2 of 2')
+
+    await wrapper.get('.pager button:first-child').trigger('click')
+    await flush()
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(3, 1, 20)
+    expect(wrapper.text()).toContain('Page 1 of 2')
+  })
+
+  it('disables pagination controls at page boundaries and while loading', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 21,
+      totalPages: 2,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    expect((wrapper.get('.pager button:first-child').element as HTMLButtonElement).disabled).toBe(true)
+    expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(false)
+
+    mockedFetchPokemonPage.mockReturnValue(new Promise(() => {}))
+    await wrapper.get('.pager button:last-child').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect((wrapper.get('.pager button:first-child').element as HTMLButtonElement).disabled).toBe(true)
+    expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('disables the next control on the last page', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 2,
+      size: 20,
+      totalCount: 21,
+      totalPages: 2,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+
+    expect((wrapper.get('.pager button:first-child').element as HTMLButtonElement).disabled).toBe(false)
+    expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('filters Pokémon names case-insensitively and shows an empty match state', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 2,
+      totalPages: 1,
+      items: [
+        { id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' },
+        { id: 25, name: 'pikachu', spriteUrl: 'sprite-25' },
+      ],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    const filterInput = wrapper.get('input[aria-label="Filter Pokémon list"]')
+    await filterInput.setValue('PIKA')
+
+    expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#25 pikachu'])
+
+    await filterInput.setValue('missing')
+
+    expect(wrapper.text()).toContain('No Pokémon match current filter.')
+    expect(wrapper.findAll('.list .item')).toHaveLength(0)
+  })
+
+  it('sorts Pokémon by ID and name in both directions', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 3,
+      totalPages: 1,
+      items: [
+        { id: 25, name: 'pikachu', spriteUrl: 'sprite-25' },
+        { id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' },
+        { id: 4, name: 'charmander', spriteUrl: 'sprite-4' },
+      ],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    const sortSelect = wrapper.get('select[aria-label="Sort Pokémon list"]')
+    const expectedOrders = [
+      ['id-asc', ['#1 bulbasaur', '#4 charmander', '#25 pikachu']],
+      ['id-desc', ['#25 pikachu', '#4 charmander', '#1 bulbasaur']],
+      ['name-asc', ['#1 bulbasaur', '#4 charmander', '#25 pikachu']],
+      ['name-desc', ['#25 pikachu', '#4 charmander', '#1 bulbasaur']],
+    ] as const
+
+    for (const [sort, expected] of expectedOrders) {
+      await sortSelect.setValue(sort)
+      expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(expected)
+    }
   })
 })
 
