@@ -7,6 +7,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 
+builder.Services.AddHealthChecks();
+
 builder.Services.AddHttpClient<IPokeApiClient, PokeApiClient>(client =>
 {
     client.BaseAddress = new Uri("https://pokeapi.co/api/v2/");
@@ -32,6 +34,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();
