@@ -277,6 +277,35 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('No Pokémon match current filter.')
     expect(wrapper.findAll('.list .item')).toHaveLength(0)
   })
+
+  it('sorts Pokémon by ID and name in both directions', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 3,
+      totalPages: 1,
+      items: [
+        { id: 25, name: 'pikachu', spriteUrl: 'sprite-25' },
+        { id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' },
+        { id: 4, name: 'charmander', spriteUrl: 'sprite-4' },
+      ],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    const sortSelect = wrapper.get('select[aria-label="Sort Pokémon list"]')
+    const expectedOrders = [
+      ['id-asc', ['#1 bulbasaur', '#4 charmander', '#25 pikachu']],
+      ['id-desc', ['#25 pikachu', '#4 charmander', '#1 bulbasaur']],
+      ['name-asc', ['#1 bulbasaur', '#4 charmander', '#25 pikachu']],
+      ['name-desc', ['#25 pikachu', '#4 charmander', '#1 bulbasaur']],
+    ] as const
+
+    for (const [sort, expected] of expectedOrders) {
+      await sortSelect.setValue(sort)
+      expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(expected)
+    }
+  })
 })
 
 async function flush(): Promise<void> {
