@@ -34,6 +34,27 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('List failed')
   })
 
+  it('shows detail error when selected pokemon request fails', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [
+        { id: 25, name: 'pikachu', spriteUrl: 'sprite' },
+      ],
+    })
+    mockedFetchPokemonDetail.mockRejectedValue(new Error('Details failed'))
+
+    const wrapper = mount(App)
+    await flush()
+
+    await wrapper.get('button.item').trigger('click')
+    await flush()
+
+    expect(wrapper.text()).toContain('Details failed')
+  })
+
   it('shows empty-state when API returns no items', async () => {
     mockedFetchPokemonPage.mockResolvedValue({
       page: 1,
