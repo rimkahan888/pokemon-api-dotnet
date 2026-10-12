@@ -13,6 +13,7 @@ const mockedFetchPokemonDetail = vi.mocked(pokemonApi.fetchPokemonDetail)
 
 afterEach(() => {
   vi.clearAllMocks()
+  vi.useRealTimers()
 })
 
 describe('App.vue', () => {
@@ -99,6 +100,82 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('#25 pikachu')
     expect(wrapper.text()).toContain('Types: electric')
     expect(wrapper.text()).toContain('Abilities: static')
+  })
+
+  it('searches for a Pokémon when the search form is submitted', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('input[aria-label="Search Pokémon"]').setValue('pikachu')
+    await wrapper.get('form').trigger('submit')
+    await flush()
+
+    expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('pikachu')
+    expect(wrapper.text()).toContain('#25 pikachu')
+  })
+
+  it('shows a validation message when search is submitted empty', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.text()).toContain('Enter a Pokémon name or ID.')
+    expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
+  })
+
+  it('searches after the debounce delay when the query changes', async () => {
+    vi.useFakeTimers()
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('input[aria-label="Search Pokémon"]').setValue('pikachu')
+    await vi.advanceTimersByTimeAsync(349)
+
+    expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+    await flush()
+
+    expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('pikachu')
+    expect(wrapper.text()).toContain('#25 pikachu')
   })
 })
 
