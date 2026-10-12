@@ -21,11 +21,14 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore backend test project
-        run: dotnet restore PokemonApi.Tests/PokemonApi.Tests.csproj
+      - name: Restore solution dependencies
+        run: dotnet restore PokemonApi.sln
+
+      - name: Build solution
+        run: dotnet build PokemonApi.sln --no-restore
 
       - name: Run backend tests
-        run: dotnet test PokemonApi.Tests/PokemonApi.Tests.csproj --no-restore
+        run: dotnet test PokemonApi.sln --no-build
 
   frontend-tests:
     runs-on: ubuntu-latest

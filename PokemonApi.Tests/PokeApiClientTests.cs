@@ -77,6 +77,31 @@ public class PokeApiClientTests
         Assert.Equal(1, result.Count);
     }
 
+    [Fact]
+    public async Task GetPokemonPageAsync_RespectsConfiguredRetryAttempts()
+    {
+        var requestCount = 0;
+        using var httpClient = new HttpClient(new TestHttpMessageHandler((_, _) =>
+        {
+            requestCount++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        }))
+        {
+            BaseAddress = new Uri("https://pokeapi.co/api/v2/")
+        };
+        var options = Microsoft.Extensions.Options.Options.Create(new PokemonApi.Configuration.PokeApiOptions
+        {
+            RetryAttempts = 1,
+            RetryBackoffMilliseconds = 10
+        });
+        var client = new PokeApiClient(httpClient, options);
+
+        await Assert.ThrowsAsync<UpstreamServiceException>(() =>
+            client.GetPokemonPageAsync(0, 10, CancellationToken.None));
+
+        Assert.Equal(1, requestCount);
+    }
+
     private static HttpResponseMessage JsonResponse(string json) =>
         new(HttpStatusCode.OK)
         {

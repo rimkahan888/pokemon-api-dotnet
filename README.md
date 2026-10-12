@@ -19,13 +19,19 @@ Planning-first project to build a C# backend integrated with PokéAPI and a Vue 
 - `/home/runner/work/csharp1/csharp1/docs/pr-plan.md`
 
 ## Project Structure
+- `PokemonApi.sln` – Root .NET solution
 - `/home/runner/work/csharp1/csharp1/PokemonApi` – C# backend
+- `/home/runner/work/csharp1/csharp1/PokemonApi.Tests` – C# unit test suite
 - `/home/runner/work/csharp1/csharp1/pokemon-ui` – Vue frontend
 
 ## Run Locally
 
-### 1) Backend API
+### 1) Backend API & Tests
 ```bash
+# Build and run tests
+dotnet test PokemonApi.sln
+
+# Run backend API
 cd /home/runner/work/csharp1/csharp1/PokemonApi
 dotnet run
 ```
