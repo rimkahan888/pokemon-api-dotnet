@@ -47,14 +47,3 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 - Documentation is updated when behavior/design changes.
 
 
-
-
-
-
-
-
-
-
-
-
-
