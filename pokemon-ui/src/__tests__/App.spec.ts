@@ -163,6 +163,55 @@ describe('App.vue', () => {
     expect(wrapper.get('button[aria-label="Remove from favorites"]').attributes('aria-pressed')).toBe('true')
   })
 
+  it('browses saved favorites and opens a selected Pokémon', async () => {
+    localStorage.setItem('pokemon-favorite-ids', '[25,6]')
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite' }],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 6,
+      name: 'charizard',
+      types: ['fire', 'flying'],
+      abilities: ['blaze'],
+      stats: [],
+      spriteUrl: 'charizard-sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('.viewTabs button:last-child').trigger('click')
+    await flush()
+
+    expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#6', '#25 pikachu'])
+
+    await wrapper.get('button[aria-label="View Pokémon #6"]').trigger('click')
+    await flush()
+
+    expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('6')
+    expect(wrapper.text()).toContain('#6 charizard')
+  })
+
+  it('shows an empty state when there are no saved favorites', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('.viewTabs button:last-child').trigger('click')
+
+    expect(wrapper.text()).toContain('No favorites yet.')
+    expect(wrapper.find('.pager').exists()).toBe(false)
+  })
+
   it('searches for a Pokémon when the search form is submitted', async () => {
     mockedFetchPokemonPage.mockResolvedValue({
       page: 1,

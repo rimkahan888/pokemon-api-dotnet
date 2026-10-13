@@ -8,44 +8,31 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 - Include a clear title, scope, and acceptance criteria.
 - Avoid mixing backend, frontend, and infra changes unless necessary.
 
-## Proposed PR backlog
+## Delivered work
 
-1. **Planning docs**  
-   Add roadmap and PR strategy documents.
+1. [x] **Planning docs** — Add roadmap and PR strategy documents.
+2. [x] **.NET solution scaffold** — Add solution and API project skeleton.
+3. [x] **Health endpoint** — Add `/health` endpoint and verification.
+4. [x] **PokéAPI client contract** — Add interfaces and DTOs for integration boundary.
+5. [x] **PokéAPI implementation** — Implement details and paginated list calls with mapping, caching, retries, and timeout handling.
+6. [x] **Backend Pokémon endpoints** — Expose normalized detail and paginated list responses.
+7. [x] **Vue scaffold** — Create Vue app structure and base page.
+8. [x] **Frontend API integration** — Wire frontend service to backend Pokémon endpoints.
+9. [x] **UX states and controls** — Add loading, empty, error, filtering, sorting, pagination, and detail states.
+10. [x] **Testing and CI** — Add targeted backend/frontend tests and CI checks.
+11. [x] **Favorites collection** — Browse saved favorites, open their details, and show an empty state.
 
-2. **.NET solution scaffold**  
-   Add solution and API project skeleton.
+## Next opportunities
 
-3. **Health endpoint**  
-   Add `/health` endpoint and run verification.
-
-4. **PokeAPI client contract**  
-   Add interfaces and DTOs for integration boundary.
-
-5. **PokeAPI implementation**  
-   Implement one service call and mapping.
-
-6. **Backend Pokémon endpoint**  
-   Expose normalized Pokémon response from backend.
-
-7. **Vue scaffold**  
-   Create Vue app structure and base page.
-
-8. **Frontend API integration**  
-   Wire Vue service to backend Pokémon endpoint.
-
-9. **UX improvements**  
-   Add loading, empty, and error states.
-
-10. **Testing increments**  
-    Add targeted tests per newly introduced behavior.
+- **Catalog-wide search** — Search across PokéAPI results rather than only the current page.
+- **Favorite metadata** — Keep names and sprites available in the favorites collection without a current-page lookup.
+- **Accessibility and responsive polish** — Continue refining keyboard and small-screen experiences.
 
 ## Definition of done per PR
 
 - Scope is limited and reviewable.
 - Basic validation for the touched area is complete.
 - Documentation is updated when behavior/design changes.
-
 
 
 
