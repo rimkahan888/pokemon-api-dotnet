@@ -237,17 +237,15 @@ onUnmounted(() => {
           <h2>{{ viewMode === 'all' ? 'Pokémon List' : 'Favorites' }}</h2>
           <p>{{ viewMode === 'all' ? `${totalCount} total` : `${favoriteIds.length} saved` }}</p>
         </header>
-        <div class="viewTabs" role="tablist" aria-label="Pokémon collection">
+        <div class="viewTabs" role="group" aria-label="Pokémon collection">
           <button
             type="button"
-            role="tab"
-            :aria-selected="viewMode === 'all'"
+            :aria-pressed="viewMode === 'all'"
             @click="viewMode = 'all'"
           >All Pokémon</button>
           <button
             type="button"
-            role="tab"
-            :aria-selected="viewMode === 'favorites'"
+            :aria-pressed="viewMode === 'favorites'"
             @click="viewMode = 'favorites'"
           >Favorites</button>
         </div>

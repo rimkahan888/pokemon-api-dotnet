@@ -1,44 +1,39 @@
 # Roadmap: C# + PokeAPI + Vue
 
-This roadmap intentionally breaks delivery into small, gradual milestones.
+This roadmap tracks delivered milestones and the next opportunities for incremental work.
 
-## Milestone 0: Planning and repo hygiene
+## Completed milestones
 
-- Define architecture and PR slicing strategy.
-- Establish naming, folder layout, and review conventions.
+### Milestone 0: Planning and repo hygiene
+- [x] Define architecture and PR slicing strategy.
+- [x] Establish naming, folder layout, and review conventions.
 
-## Milestone 1: Backend foundation (C#)
+### Milestone 1: Backend foundation (C#)
+- [x] Create .NET solution and API project.
+- [x] Add basic health endpoint.
+- [x] Add config structure for external API settings.
 
-- Create .NET solution and API project.
-- Add basic health endpoint.
-- Add config structure for external API settings.
+### Milestone 2: PokeAPI integration
+- [x] Add typed client/service for PokéAPI.
+- [x] Fetch Pokémon details and paginated lists.
+- [x] Add retries, timeout handling, error handling, caching, and DTO mapping.
 
-## Milestone 2: PokeAPI integration
+### Milestone 3: Frontend foundation (Vue)
+- [x] Scaffold Vue app with a base page.
+- [x] Add API service layer pointing to the backend.
 
-- Add typed client/service for PokeAPI.
-- Start with one endpoint (for example: Pokémon by name).
-- Add error handling and DTO mapping.
+### Milestone 4: End-to-end feature slice
+- [x] Search for or select Pokémon and render detail data.
+- [x] Browse a paginated Pokémon list.
+- [x] Save favorites and browse the favorites collection.
 
-## Milestone 3: Frontend foundation (Vue)
+### Milestone 5: Quality and polish
+- [x] Add incremental backend and frontend tests.
+- [x] Add loading, empty, and error states.
+- [x] Add CI checks.
 
-- Scaffold Vue app.
-- Add basic routing and layout.
-- Add API service layer pointing to backend.
+## Next opportunities
 
-## Milestone 4: End-to-end feature slice
-
-- UI to search/select Pokémon.
-- Backend endpoint calls PokeAPI and returns normalized response.
-- Frontend renders selected Pokémon data.
-
-## Milestone 5: Quality and polish
-
-- Add incremental tests for backend and frontend.
-- Improve UX/loading/error states.
-- Add CI checks once code exists.
-
-
-
-
-
-
+- Add server-side search and filters so queries span the complete PokéAPI catalog.
+- Add richer favorite metadata and management without requiring a detail request.
+- Continue improving responsive layout and accessibility based on usage.

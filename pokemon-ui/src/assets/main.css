@@ -75,6 +75,17 @@ button:disabled {
   margin-bottom: 0.75rem;
 }
 
+.viewTabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.viewTabs [aria-pressed='true'] {
+  border-color: var(--color-text);
+  font-weight: 600;
+}
+
 .list {
   list-style: none;
   padding: 0;
