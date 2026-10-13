@@ -14,6 +14,7 @@ const listLoading = ref(false)
 const detailLoading = ref(false)
 const listError = ref('')
 const detailError = ref('')
+const viewMode = ref<'all' | 'favorites'>('all')
 const search = ref('')
 const filterText = ref('')
 const sortBy = ref<'id-asc' | 'id-desc' | 'name-asc' | 'name-desc'>('id-asc')
@@ -27,12 +28,33 @@ const hasNext = computed(() => currentPage.value < totalPages.value)
 const selectedPokemonIsFavorite = computed(() =>
   selectedPokemon.value !== null && favoriteIds.value.includes(selectedPokemon.value.id),
 )
+const activeList = computed<PokemonSummary[]>(() => {
+  if (viewMode.value === 'all') {
+    return list.value
+  }
+
+  return favoriteIds.value.map((id) => {
+    const knownPokemon = list.value.find((pokemon) => pokemon.id === id)
+    if (knownPokemon) {
+      return knownPokemon
+    }
+
+    if (selectedPokemon.value?.id === id) {
+      const { id: pokemonId, name, spriteUrl } = selectedPokemon.value
+      return { id: pokemonId, name, spriteUrl }
+    }
+
+    return { id, name: '', spriteUrl: '' }
+  })
+})
 const filteredAndSortedList = computed(() => {
   const normalizedFilter = filterText.value.trim().toLowerCase()
-  let items = list.value
+  let items = activeList.value
 
   if (normalizedFilter) {
-    items = items.filter((pokemon) => pokemon.name.toLowerCase().includes(normalizedFilter))
+    items = items.filter((pokemon) =>
+      pokemon.name.toLowerCase().includes(normalizedFilter) || String(pokemon.id).includes(normalizedFilter),
+    )
   }
 
   const sorted = [...items]
@@ -212,9 +234,23 @@ onUnmounted(() => {
     <div class="grid">
       <section class="card">
         <header class="sectionHeader">
-          <h2>Pokémon List</h2>
-          <p>{{ totalCount }} total</p>
+          <h2>{{ viewMode === 'all' ? 'Pokémon List' : 'Favorites' }}</h2>
+          <p>{{ viewMode === 'all' ? `${totalCount} total` : `${favoriteIds.length} saved` }}</p>
         </header>
+        <div class="viewTabs" role="tablist" aria-label="Pokémon collection">
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="viewMode === 'all'"
+            @click="viewMode = 'all'"
+          >All Pokémon</button>
+          <button
+            type="button"
+            role="tab"
+            :aria-selected="viewMode === 'favorites'"
+            @click="viewMode = 'favorites'"
+          >Favorites</button>
+        </div>
         <div class="controls">
           <input
             v-model="filterText"
@@ -230,21 +266,27 @@ onUnmounted(() => {
           </select>
         </div>
 
-        <p v-if="listLoading" class="state">Loading list...</p>
-        <p v-else-if="listError" class="error">{{ listError }}</p>
-        <p v-else-if="list.length === 0" class="state">No Pokémon found.</p>
+        <p v-if="viewMode === 'all' && listLoading" class="state">Loading list...</p>
+        <p v-else-if="viewMode === 'all' && listError" class="error">{{ listError }}</p>
+        <p v-else-if="viewMode === 'favorites' && favoriteIds.length === 0" class="state">No favorites yet.</p>
+        <p v-else-if="viewMode === 'all' && list.length === 0" class="state">No Pokémon found.</p>
         <p v-else-if="filteredAndSortedList.length === 0" class="state">No Pokémon match current filter.</p>
 
         <ul v-else class="list">
           <li v-for="pokemon in filteredAndSortedList" :key="pokemon.id">
-            <button class="item" type="button" @click="viewPokemon(pokemon.id)">
-              <img :src="pokemon.spriteUrl" :alt="pokemon.name">
-              <span>#{{ pokemon.id }} {{ pokemon.name }}</span>
+            <button
+              class="item"
+              type="button"
+              :aria-label="`View Pokémon #${pokemon.id}${pokemon.name ? ` ${pokemon.name}` : ''}`"
+              @click="viewPokemon(pokemon.id)"
+            >
+              <img v-if="pokemon.spriteUrl" :src="pokemon.spriteUrl" :alt="pokemon.name">
+              <span>#{{ pokemon.id }}{{ pokemon.name ? ` ${pokemon.name}` : '' }}</span>
             </button>
           </li>
         </ul>
 
-        <footer class="pager">
+        <footer v-if="viewMode === 'all'" class="pager">
           <button :disabled="!hasPrev || listLoading" type="button" @click="prevPage">Previous</button>
           <span>Page {{ currentPage }} of {{ totalPages }}</span>
           <button :disabled="!hasNext || listLoading" type="button" @click="nextPage">Next</button>
