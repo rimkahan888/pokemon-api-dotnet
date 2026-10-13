@@ -190,6 +190,56 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('#25 pikachu')
   })
 
+  it('keeps the latest search result when requests finish out of order', async () => {
+    let resolveFirst!: (pokemon: Awaited<ReturnType<typeof pokemonApi.fetchPokemonDetail>>) => void
+    let resolveSecond!: (pokemon: Awaited<ReturnType<typeof pokemonApi.fetchPokemonDetail>>) => void
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+    mockedFetchPokemonDetail
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirst = resolve }))
+      .mockReturnValueOnce(new Promise((resolve) => { resolveSecond = resolve }))
+
+    const wrapper = mount(App)
+    await flush()
+    const searchInput = wrapper.get('input[aria-label="Search Pokémon"]')
+    const searchForm = wrapper.get('form')
+
+    await searchInput.setValue('pikachu')
+    await searchForm.trigger('submit')
+    await searchInput.setValue('bulbasaur')
+    await searchForm.trigger('submit')
+
+    resolveSecond({
+      id: 1,
+      name: 'bulbasaur',
+      types: ['grass', 'poison'],
+      abilities: ['overgrow'],
+      stats: [],
+      spriteUrl: 'bulbasaur-sprite',
+    })
+    await flush()
+
+    expect(wrapper.text()).toContain('#1 bulbasaur')
+
+    resolveFirst({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'pikachu-sprite',
+    })
+    await flush()
+
+    expect(wrapper.text()).toContain('#1 bulbasaur')
+    expect(wrapper.text()).not.toContain('#25 pikachu')
+  })
+
   it('shows a validation message when search is submitted empty', async () => {
     mockedFetchPokemonPage.mockResolvedValue({
       page: 1,

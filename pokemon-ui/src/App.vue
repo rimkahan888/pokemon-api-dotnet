@@ -20,6 +20,7 @@ const sortBy = ref<'id-asc' | 'id-desc' | 'name-asc' | 'name-desc'>('id-asc')
 const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
 const debounceDelayMs = 350
 const suppressDebouncedSearch = ref(false)
+let latestDetailRequest = 0
 
 const hasPrev = computed(() => currentPage.value > 1)
 const hasNext = computed(() => currentPage.value < totalPages.value)
@@ -72,16 +73,24 @@ async function loadPage(page: number): Promise<void> {
 }
 
 async function loadPokemon(nameOrId: string): Promise<void> {
+  const requestId = ++latestDetailRequest
   detailLoading.value = true
   detailError.value = ''
 
   try {
-    selectedPokemon.value = await fetchPokemonDetail(nameOrId)
+    const pokemon = await fetchPokemonDetail(nameOrId)
+    if (requestId === latestDetailRequest) {
+      selectedPokemon.value = pokemon
+    }
   } catch (error) {
-    selectedPokemon.value = null
-    detailError.value = error instanceof Error ? error.message : 'Unable to load Pokémon details.'
+    if (requestId === latestDetailRequest) {
+      selectedPokemon.value = null
+      detailError.value = error instanceof Error ? error.message : 'Unable to load Pokémon details.'
+    }
   } finally {
-    detailLoading.value = false
+    if (requestId === latestDetailRequest) {
+      detailLoading.value = false
+    }
   }
 }
 
