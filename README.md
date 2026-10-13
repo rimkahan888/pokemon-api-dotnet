@@ -15,14 +15,14 @@ Planning-first project to build a C# backend integrated with PokéAPI and a Vue 
 - Loading/error states in frontend
 
 ## Incremental planning docs
-- `/home/runner/work/csharp1/csharp1/docs/roadmap.md`
-- `/home/runner/work/csharp1/csharp1/docs/pr-plan.md`
+- `docs/roadmap.md`
+- `docs/pr-plan.md`
 
 ## Project Structure
 - `PokemonApi.sln` – Root .NET solution
-- `/home/runner/work/csharp1/csharp1/PokemonApi` – C# backend
-- `/home/runner/work/csharp1/csharp1/PokemonApi.Tests` – C# unit test suite
-- `/home/runner/work/csharp1/csharp1/pokemon-ui` – Vue frontend
+- `PokemonApi` – C# backend
+- `PokemonApi.Tests` – C# unit test suite
+- `pokemon-ui` – Vue frontend
 
 ## Run Locally
 
@@ -32,19 +32,20 @@ Planning-first project to build a C# backend integrated with PokéAPI and a Vue 
 dotnet test PokemonApi.sln
 
 # Run backend API
-cd /home/runner/work/csharp1/csharp1/PokemonApi
-dotnet run
+dotnet run --project PokemonApi
 ```
 Backend listens on `http://localhost:5010` in development.
+The health check is available at `GET /health`.
 
 ### 2) Frontend
 ```bash
-cd /home/runner/work/csharp1/csharp1/pokemon-ui
-npm install
+cd pokemon-ui
+npm ci
 npm run dev
 ```
-Frontend runs on Vite and proxies `/api/*` requests to `http://localhost:5010`.
+Frontend runs on Vite and proxies `/api/*` requests to `http://localhost:5010`; start the backend in a separate terminal first. Run frontend checks with `npm run build` and `npm test` from `pokemon-ui`.
 
 ## API Endpoints
+- `GET /health`
 - `GET /api/pokemon/{nameOrId}`
 - `GET /api/pokemon?page={n}&size={m}`
