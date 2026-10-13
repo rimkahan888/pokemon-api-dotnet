@@ -123,6 +123,35 @@ public class PokemonApiServiceTests
         Assert.Equal(2, client.GetPokemonCallCount);
     }
 
+    [Fact]
+    public async Task GetPokemonAsync_UsesCustomFallbackSpriteBaseUrl_FromOptions()
+    {
+        var client = new FakePokeApiClient
+        {
+            PokemonToReturn = new PokeApiPokemon
+            {
+                Id = 7,
+                Name = "squirtle",
+                Sprites = new PokeApiSprites { FrontDefault = null },
+                Types = [],
+                Abilities = [],
+                Stats = []
+            }
+        };
+
+        var options = Microsoft.Extensions.Options.Options.Create(new PokemonApi.Configuration.PokeApiOptions
+        {
+            FallbackSpriteBaseUrl = "https://custom-sprites.example.com"
+        });
+        var cache = new MemoryCache(new MemoryCacheOptions());
+        var service = new PokemonService(client, cache, options);
+
+        var result = await service.GetPokemonAsync("squirtle", CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal("https://custom-sprites.example.com/7.png", result.SpriteUrl);
+    }
+
     private static PokemonService CreateService(IPokeApiClient client)
     {
         var cache = new MemoryCache(new MemoryCacheOptions());

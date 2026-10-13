@@ -1,13 +1,16 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using PokemonApi.Configuration;
 using PokemonApi.Exceptions;
 using PokemonApi.Models;
 
 namespace PokemonApi.Clients;
 
-public class PokeApiClient(HttpClient httpClient) : IPokeApiClient
+public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? options = null) : IPokeApiClient
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
+    private readonly PokeApiOptions _options = options?.Value ?? new PokeApiOptions();
 
     public async Task<PokeApiPokemon?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken)
     {
@@ -30,12 +33,15 @@ public class PokeApiClient(HttpClient httpClient) : IPokeApiClient
     private async Task<T?> SendWithRetryAsync<T>(string relativeUrl, CancellationToken cancellationToken)
     {
         Exception? lastError = null;
+        var retryAttempts = Math.Max(1, _options.RetryAttempts);
+        var timeout = TimeSpan.FromSeconds(_options.RequestTimeoutSeconds > 0 ? _options.RequestTimeoutSeconds : 5);
+        var backoffMs = _options.RetryBackoffMilliseconds > 0 ? _options.RetryBackoffMilliseconds : 200;
 
-        for (var attempt = 1; attempt <= 3; attempt++)
+        for (var attempt = 1; attempt <= retryAttempts; attempt++)
         {
             try
             {
-                using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                using var timeoutCts = new CancellationTokenSource(timeout);
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
                 var response = await httpClient.GetAsync(relativeUrl, linkedCts.Token);
@@ -71,9 +77,9 @@ public class PokeApiClient(HttpClient httpClient) : IPokeApiClient
 
                 lastError = ex;
 
-                if (attempt < 3)
+                if (attempt < retryAttempts)
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(200 * attempt), cancellationToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(backoffMs * attempt), cancellationToken);
                 }
             }
         }

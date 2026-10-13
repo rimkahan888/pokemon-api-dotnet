@@ -1,15 +1,15 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using PokemonApi.Clients;
+using PokemonApi.Configuration;
 using PokemonApi.Exceptions;
 using PokemonApi.Models;
 
 namespace PokemonApi.Services;
 
-public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache) : IPokemonService
+public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IOptions<PokeApiOptions>? options = null) : IPokemonService
 {
-    private static readonly TimeSpan DetailCacheDuration = TimeSpan.FromMinutes(10);
-    private static readonly TimeSpan ListCacheDuration = TimeSpan.FromMinutes(5);
-    private const string FallbackSpriteBase = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
+    private readonly PokeApiOptions _options = options?.Value ?? new PokeApiOptions();
 
     public async Task<PokemonDetailDto?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken)
     {
@@ -35,7 +35,8 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache) : 
         }
 
         var dto = MapDetail(pokemon);
-        cache.Set(cacheKey, dto, DetailCacheDuration);
+        var detailDuration = TimeSpan.FromMinutes(_options.DetailCacheMinutes > 0 ? _options.DetailCacheMinutes : 10);
+        cache.Set(cacheKey, dto, detailDuration);
         return dto;
     }
 
@@ -69,14 +70,16 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache) : 
             (int)Math.Ceiling(list.Count / (double)size),
             items);
 
-        cache.Set(cacheKey, dto, ListCacheDuration);
+        var listDuration = TimeSpan.FromMinutes(_options.ListCacheMinutes > 0 ? _options.ListCacheMinutes : 5);
+        cache.Set(cacheKey, dto, listDuration);
         return dto;
     }
 
-    private static PokemonDetailDto MapDetail(PokeApiPokemon pokemon)
+    private PokemonDetailDto MapDetail(PokeApiPokemon pokemon)
     {
+        var fallbackBase = _options.FallbackSpriteBaseUrl.TrimEnd('/');
         var sprite = string.IsNullOrWhiteSpace(pokemon.Sprites.FrontDefault)
-            ? $"{FallbackSpriteBase}/{pokemon.Id}.png"
+            ? $"{fallbackBase}/{pokemon.Id}.png"
             : pokemon.Sprites.FrontDefault;
 
         return new PokemonDetailDto(
@@ -88,14 +91,15 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache) : 
             sprite);
     }
 
-    private static PokemonSummaryDto? MapSummary(PokeApiNamedResource resource)
+    private PokemonSummaryDto? MapSummary(PokeApiNamedResource resource)
     {
         if (!TryExtractPokemonId(resource.Url, out var id))
         {
             return null;
         }
 
-        return new PokemonSummaryDto(id, resource.Name, $"{FallbackSpriteBase}/{id}.png");
+        var fallbackBase = _options.FallbackSpriteBaseUrl.TrimEnd('/');
+        return new PokemonSummaryDto(id, resource.Name, $"{fallbackBase}/{id}.png");
     }
 
     private static bool TryExtractPokemonId(string resourceUrl, out int id)

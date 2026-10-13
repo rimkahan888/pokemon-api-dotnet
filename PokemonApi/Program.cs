@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using PokemonApi.Clients;
+using PokemonApi.Configuration;
 using PokemonApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,10 +11,14 @@ builder.Services.AddControllers();
 
 builder.Services.AddHealthChecks();
 
-builder.Services.AddHttpClient<IPokeApiClient, PokeApiClient>(client =>
+builder.Services.Configure<PokeApiOptions>(
+    builder.Configuration.GetSection(PokeApiOptions.SectionName));
+
+builder.Services.AddHttpClient<IPokeApiClient, PokeApiClient>((serviceProvider, client) =>
 {
-    client.BaseAddress = new Uri("https://pokeapi.co/api/v2/");
-    client.Timeout = TimeSpan.FromSeconds(10);
+    var options = serviceProvider.GetRequiredService<IOptions<PokeApiOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(options.ClientTimeoutSeconds);
 });
 
 builder.Services.AddScoped<IPokemonService, PokemonService>();
