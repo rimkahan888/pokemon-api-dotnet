@@ -47,6 +47,10 @@ jobs:
         working-directory: pokemon-ui
         run: npm ci
 
+      - name: Build frontend
+        working-directory: pokemon-ui
+        run: npm run build
+
       - name: Run frontend tests
         working-directory: pokemon-ui
         run: npm test
