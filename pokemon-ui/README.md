@@ -1,42 +1,33 @@
-# pokemon-ui
+# Pokémon Data Explorer frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+This Vue 3 application uses Vite and TypeScript to browse a paginated Pokémon list, search by name or ID, and view Pokémon details and favorites.
 
-## Recommended IDE Setup
+## Requirements
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Use a Node.js version supported by `package.json`: `^22.18.0` or `>=24.12.0`.
 
-## Recommended Browser Setup
+## Development
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+Start the backend API from the repository root in a separate terminal:
 
 ```sh
-npm install
+dotnet run --project PokemonApi
 ```
 
-### Compile and Hot-Reload for Development
+Then start the frontend:
 
 ```sh
+npm ci
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+Vite proxies `/api/*` requests to `http://localhost:5010`. The backend provides the Pokémon endpoints and `/health`.
+
+## Checks
 
 ```sh
 npm run build
+npm test
 ```
+
+The build type-checks the Vue/TypeScript project and creates a production Vite bundle. Tests run with Vitest.
