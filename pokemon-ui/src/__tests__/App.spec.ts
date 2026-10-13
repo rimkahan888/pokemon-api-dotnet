@@ -186,7 +186,7 @@ describe('App.vue', () => {
     await wrapper.get('.viewTabs button:last-child').trigger('click')
     await flush()
 
-    expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#25 pikachu', '#6'])
+    expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#6', '#25 pikachu'])
 
     await wrapper.get('button[aria-label="View Pokémon #6"]').trigger('click')
     await flush()
