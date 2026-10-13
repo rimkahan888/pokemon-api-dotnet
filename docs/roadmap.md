@@ -37,3 +37,6 @@ This roadmap tracks delivered milestones and the next opportunities for incremen
 - Add server-side search and filters so queries span the complete PokéAPI catalog.
 - Add richer favorite metadata and management without requiring a detail request.
 - Continue improving responsive layout and accessibility based on usage.
+
+
+
