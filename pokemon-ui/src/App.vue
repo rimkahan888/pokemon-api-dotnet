@@ -9,6 +9,7 @@ const totalPages = ref(1)
 const totalCount = ref(0)
 const list = ref<PokemonSummary[]>([])
 const selectedPokemon = ref<PokemonDetail | null>(null)
+const favoriteIds = ref(loadFavoriteIds())
 const listLoading = ref(false)
 const detailLoading = ref(false)
 const listError = ref('')
@@ -22,6 +23,9 @@ const suppressDebouncedSearch = ref(false)
 
 const hasPrev = computed(() => currentPage.value > 1)
 const hasNext = computed(() => currentPage.value < totalPages.value)
+const selectedPokemonIsFavorite = computed(() =>
+  selectedPokemon.value !== null && favoriteIds.value.includes(selectedPokemon.value.id),
+)
 const filteredAndSortedList = computed(() => {
   const normalizedFilter = filterText.value.trim().toLowerCase()
   let items = list.value
@@ -103,6 +107,36 @@ async function viewPokemon(id: number): Promise<void> {
     await loadPokemon(`${id}`)
   } finally {
     suppressDebouncedSearch.value = false
+  }
+}
+
+function toggleFavorite(): void {
+  if (!selectedPokemon.value) return
+
+  const id = selectedPokemon.value.id
+  favoriteIds.value = selectedPokemonIsFavorite.value
+    ? favoriteIds.value.filter((favoriteId) => favoriteId !== id)
+    : [...favoriteIds.value, id]
+
+  try {
+    localStorage.setItem('pokemon-favorite-ids', JSON.stringify(favoriteIds.value))
+  } catch {
+    // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function loadFavoriteIds(): number[] {
+  try {
+    const stored = localStorage.getItem('pokemon-favorite-ids')
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+
+    if (!Array.isArray(parsed)) return []
+
+    return [...new Set(parsed.filter(
+      (id): id is number => Number.isSafeInteger(id) && id > 0,
+    ))]
+  } catch {
+    return []
   }
 }
 
@@ -220,6 +254,14 @@ onUnmounted(() => {
         <article v-else class="detail">
           <img :src="selectedPokemon.spriteUrl" :alt="selectedPokemon.name">
           <h3>#{{ selectedPokemon.id }} {{ selectedPokemon.name }}</h3>
+          <button
+            type="button"
+            :aria-pressed="selectedPokemonIsFavorite"
+            :aria-label="selectedPokemonIsFavorite ? 'Remove from favorites' : 'Add to favorites'"
+            @click="toggleFavorite"
+          >
+            {{ selectedPokemonIsFavorite ? '★ Favorite' : '☆ Add to favorites' }}
+          </button>
 
           <p><strong>Types:</strong> {{ selectedPokemon.types.join(', ') }}</p>
           <p><strong>Abilities:</strong> {{ selectedPokemon.abilities.join(', ') }}</p>

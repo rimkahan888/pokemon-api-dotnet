@@ -14,6 +14,7 @@ const mockedFetchPokemonDetail = vi.mocked(pokemonApi.fetchPokemonDetail)
 afterEach(() => {
   vi.clearAllMocks()
   vi.useRealTimers()
+  localStorage.removeItem('pokemon-favorite-ids')
 })
 
 describe('App.vue', () => {
@@ -100,6 +101,66 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('#25 pikachu')
     expect(wrapper.text()).toContain('Types: electric')
     expect(wrapper.text()).toContain('Abilities: static')
+  })
+
+  it('toggles a Pokémon favorite and persists favorite IDs', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite' }],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('button.item').trigger('click')
+    await flush()
+
+    const favoriteButton = wrapper.get('button[aria-label="Add to favorites"]')
+    await favoriteButton.trigger('click')
+
+    expect(wrapper.get('button[aria-label="Remove from favorites"]').attributes('aria-pressed')).toBe('true')
+    expect(localStorage.getItem('pokemon-favorite-ids')).toBe('[25]')
+
+    await wrapper.get('button[aria-label="Remove from favorites"]').trigger('click')
+
+    expect(wrapper.get('button[aria-label="Add to favorites"]').attributes('aria-pressed')).toBe('false')
+    expect(localStorage.getItem('pokemon-favorite-ids')).toBe('[]')
+  })
+
+  it('restores saved favorites when displaying a Pokémon', async () => {
+    localStorage.setItem('pokemon-favorite-ids', '[25]')
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite' }],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('button.item').trigger('click')
+    await flush()
+
+    expect(wrapper.get('button[aria-label="Remove from favorites"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('searches for a Pokémon when the search form is submitted', async () => {
