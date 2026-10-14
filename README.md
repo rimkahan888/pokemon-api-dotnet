@@ -14,6 +14,12 @@ Planning-first project to build a C# backend integrated with PokéAPI and a Vue 
 - Backend caching and retry/timeout handling for PokéAPI calls
 - Loading/error states in frontend
 
+## Screenshot
+
+![Pokémon Data Explorer running locally](docs/images/pokemon-data-explorer.png)
+
+The screenshot shows the app running while PokéAPI was unreachable from the capture environment.
+
 ## Incremental planning docs
 - `docs/roadmap.md`
 - `docs/pr-plan.md`
