@@ -16,6 +16,7 @@ afterEach(() => {
   vi.clearAllMocks()
   vi.useRealTimers()
   localStorage.removeItem('pokemon-favorite-ids')
+  localStorage.removeItem('pokemon-favorite-metadata')
   localStorage.removeItem('pokemon-team')
 })
 
@@ -132,6 +133,9 @@ describe('App.vue', () => {
 
     expect(wrapper.get('button[aria-label="Remove from favorites"]').attributes('aria-pressed')).toBe('true')
     expect(localStorage.getItem('pokemon-favorite-ids')).toBe('[25]')
+    expect(JSON.parse(localStorage.getItem('pokemon-favorite-metadata')!)).toEqual([
+      { id: 25, name: 'pikachu', spriteUrl: 'sprite' },
+    ])
 
     await wrapper.get('button[aria-label="Remove from favorites"]').trigger('click')
 
@@ -195,6 +199,60 @@ describe('App.vue', () => {
 
     expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('6')
     expect(wrapper.text()).toContain('#6 charizard')
+  })
+
+  it('manages favorites from list entries and restores their saved metadata', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 2,
+      totalPages: 1,
+      items: [
+        { id: 25, name: 'pikachu', spriteUrl: 'pikachu-sprite' },
+        { id: 6, name: 'charizard', spriteUrl: 'charizard-sprite' },
+      ],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+
+    await wrapper.get('button[aria-label="Add pikachu to favorites"]').trigger('click')
+    expect(localStorage.getItem('pokemon-favorite-ids')).toBe('[25]')
+    expect(JSON.parse(localStorage.getItem('pokemon-favorite-metadata')!)).toEqual([
+      { id: 25, name: 'pikachu', spriteUrl: 'pikachu-sprite' },
+    ])
+    expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
+
+    await wrapper.get('.viewTabs button:last-child').trigger('click')
+    expect(wrapper.get('button[aria-label="View Pokémon #25 pikachu"] img').attributes('src'))
+      .toBe('pikachu-sprite')
+
+    await wrapper.get('button[aria-label="Remove pikachu from favorites"]').trigger('click')
+    expect(localStorage.getItem('pokemon-favorite-ids')).toBe('[]')
+    expect(localStorage.getItem('pokemon-favorite-metadata')).toBe('[]')
+    expect(wrapper.text()).toContain('No favorites yet.')
+    expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
+  })
+
+  it('enriches legacy favorite IDs from the catalog list', async () => {
+    localStorage.setItem('pokemon-favorite-ids', '[25]')
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'pikachu-sprite' }],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('.viewTabs button:last-child').trigger('click')
+
+    expect(wrapper.get('button[aria-label="View Pokémon #25 pikachu"] img').attributes('src'))
+      .toBe('pikachu-sprite')
+    expect(JSON.parse(localStorage.getItem('pokemon-favorite-metadata')!)).toEqual([
+      { id: 25, name: 'pikachu', spriteUrl: 'pikachu-sprite' },
+    ])
   })
 
   it('shows an empty state when there are no saved favorites', async () => {

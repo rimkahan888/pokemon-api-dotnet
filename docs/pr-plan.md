@@ -25,10 +25,10 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 13. [x] **Team builder, Phase 2** — Show type coverage and shared weaknesses, accounting for dual-type matchups.
 14. [x] **Team builder, Phase 3** — Add accessible reorder controls and responsive team analysis layout.
 15. [x] **Catalog-wide search** — Search all Pokémon by name or ID with paginated results.
+16. [x] **Favorite metadata and management** — Persist names and sprites, and add or remove favorites directly from the list.
 
 ## Next opportunities
 
-- **Favorite metadata** — Keep names and sprites available in the favorites collection without a current-page lookup.
 - **Accessibility and responsive polish** — Continue refining keyboard and small-screen experiences.
 
 ## Definition of done per PR
