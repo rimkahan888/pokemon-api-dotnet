@@ -180,7 +180,10 @@ function moveTeamMember(id: number, direction: -1 | 1): void {
   if (index < 0 || targetIndex < 0 || targetIndex >= team.value.length) return
 
   const reordered = [...team.value]
-  ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+  const member = reordered[index]
+  if (!member) return
+  reordered.splice(index, 1)
+  reordered.splice(targetIndex, 0, member)
   team.value = reordered
   saveTeam()
 }

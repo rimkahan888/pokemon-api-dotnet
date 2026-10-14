@@ -41,7 +41,6 @@ This roadmap tracks delivered milestones and the next opportunities for incremen
 ## Pokémon team builder
 
 - [x] Phase 1: Create and persist a six-Pokémon team with add/remove controls.
-- [ ] Phase 2: Analyze type coverage and shared weaknesses.
-- [ ] Phase 3: Polish team interactions and responsive/accessibility behavior.
-
+- [x] Phase 2: Show represented types and shared weaknesses using combined dual-type matchups.
+- [x] Phase 3: Add keyboard-accessible reorder controls, responsive team layout, and clear analysis states.
 

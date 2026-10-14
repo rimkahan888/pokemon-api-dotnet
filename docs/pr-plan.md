@@ -22,8 +22,8 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 10. [x] **Testing and CI** — Add targeted backend/frontend tests and CI checks.
 11. [x] **Favorites collection** — Browse saved favorites, open their details, and show an empty state.
 12. [x] **Team builder, Phase 1** — Assemble and persist a team of up to six Pokémon.
-13. [ ] **Team builder, Phase 2** — Show type coverage and shared weaknesses.
-14. [ ] **Team builder, Phase 3** — Polish team interactions, accessibility, and responsive layout.
+13. [x] **Team builder, Phase 2** — Show type coverage and shared weaknesses, accounting for dual-type matchups.
+14. [x] **Team builder, Phase 3** — Add accessible reorder controls and responsive team analysis layout.
 
 ## Next opportunities
 
@@ -40,5 +40,4 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 
 
 - editing the latest version of the document 
-
 
