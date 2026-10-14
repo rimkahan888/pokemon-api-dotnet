@@ -275,6 +275,9 @@ watch(filterText, () => {
 watch(viewMode, (mode) => {
   if (mode === 'all') {
     void loadPage(1)
+  } else if (debounceHandle.value) {
+    clearTimeout(debounceHandle.value)
+    debounceHandle.value = null
   }
 })
 
@@ -360,7 +363,7 @@ onUnmounted(() => {
         <p v-if="viewMode === 'all' && listLoading" class="state">Loading list...</p>
         <p v-else-if="viewMode === 'all' && listError" class="error">{{ listError }}</p>
         <p v-else-if="viewMode === 'favorites' && favoriteIds.length === 0" class="state">No favorites yet.</p>
-        <p v-else-if="viewMode === 'all' && list.length === 0" class="state">No Pokémon found.</p>
+        <p v-else-if="viewMode === 'all' && list.length === 0 && !filterText.trim()" class="state">No Pokémon found.</p>
         <p v-else-if="filteredAndSortedList.length === 0" class="state">No Pokémon match current filter.</p>
 
         <ul v-else class="list">

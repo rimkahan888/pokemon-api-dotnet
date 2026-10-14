@@ -483,12 +483,12 @@ describe('App.vue', () => {
     await flush()
     await wrapper.get('.pager button:last-child').trigger('click')
     await flush()
-    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(2, 2, 20)
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(2, 2, 20, '')
     expect(wrapper.text()).toContain('Page 2 of 2')
 
     await wrapper.get('.pager button:first-child').trigger('click')
     await flush()
-    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(3, 1, 20)
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(3, 1, 20, '')
     expect(wrapper.text()).toContain('Page 1 of 2')
   })
 
@@ -532,16 +532,28 @@ describe('App.vue', () => {
 
   it('searches the full catalog and shows an empty match state', async () => {
     vi.useFakeTimers()
-    mockedFetchPokemonPage.mockResolvedValue({
-      page: 1,
-      size: 20,
-      totalCount: 2,
-      totalPages: 1,
-      items: [
-        { id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' },
-        { id: 25, name: 'pikachu', spriteUrl: 'sprite-25' },
-      ],
-    })
+    mockedFetchPokemonPage
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 2,
+        totalPages: 1,
+        items: [{ id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' }],
+      })
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 1,
+        totalPages: 1,
+        items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite-25' }],
+      })
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 0,
+        totalPages: 0,
+        items: [],
+      })
 
     const wrapper = mount(App)
     await flush()
