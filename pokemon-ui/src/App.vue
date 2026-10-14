@@ -20,7 +20,8 @@ const viewMode = ref<'all' | 'favorites'>('all')
 const search = ref('')
 const filterText = ref('')
 const sortBy = ref<'id-asc' | 'id-desc' | 'name-asc' | 'name-desc'>('id-asc')
-const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
+const listDebounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
+const detailDebounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
 const debounceDelayMs = 350
 const suppressDebouncedSearch = ref(false)
 let latestDetailRequest = 0
@@ -135,9 +136,9 @@ async function searchPokemon(): Promise<void> {
     return
   }
 
-  if (debounceHandle.value) {
-    clearTimeout(debounceHandle.value)
-    debounceHandle.value = null
+  if (detailDebounceHandle.value) {
+    clearTimeout(detailDebounceHandle.value)
+    detailDebounceHandle.value = null
   }
 
   await loadPokemon(query)
@@ -262,12 +263,12 @@ watch(filterText, () => {
     return
   }
 
-  if (debounceHandle.value) {
-    clearTimeout(debounceHandle.value)
+  if (listDebounceHandle.value) {
+    clearTimeout(listDebounceHandle.value)
   }
 
-  debounceHandle.value = setTimeout(() => {
-    debounceHandle.value = null
+  listDebounceHandle.value = setTimeout(() => {
+    listDebounceHandle.value = null
     void loadPage(1)
   }, debounceDelayMs)
 })
@@ -275,9 +276,9 @@ watch(filterText, () => {
 watch(viewMode, (mode) => {
   if (mode === 'all') {
     void loadPage(1)
-  } else if (debounceHandle.value) {
-    clearTimeout(debounceHandle.value)
-    debounceHandle.value = null
+  } else if (listDebounceHandle.value) {
+    clearTimeout(listDebounceHandle.value)
+    listDebounceHandle.value = null
   }
 })
 
@@ -289,23 +290,26 @@ watch(search, (value) => {
   const query = value.trim()
   detailError.value = ''
 
-  if (debounceHandle.value) {
-    clearTimeout(debounceHandle.value)
-    debounceHandle.value = null
+  if (detailDebounceHandle.value) {
+    clearTimeout(detailDebounceHandle.value)
+    detailDebounceHandle.value = null
   }
 
   if (!query) {
     return
   }
 
-  debounceHandle.value = setTimeout(() => {
+  detailDebounceHandle.value = setTimeout(() => {
     void loadPokemon(query)
   }, debounceDelayMs)
 })
 
 onUnmounted(() => {
-  if (debounceHandle.value) {
-    clearTimeout(debounceHandle.value)
+  if (listDebounceHandle.value) {
+    clearTimeout(listDebounceHandle.value)
+  }
+  if (detailDebounceHandle.value) {
+    clearTimeout(detailDebounceHandle.value)
   }
 })
 </script>
