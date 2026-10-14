@@ -10,6 +10,7 @@ const totalCount = ref(0)
 const list = ref<PokemonSummary[]>([])
 const selectedPokemon = ref<PokemonDetail | null>(null)
 const favoriteIds = ref(loadFavoriteIds())
+const team = ref(loadTeam())
 const listLoading = ref(false)
 const detailLoading = ref(false)
 const listError = ref('')
@@ -27,6 +28,9 @@ const hasPrev = computed(() => currentPage.value > 1)
 const hasNext = computed(() => currentPage.value < totalPages.value)
 const selectedPokemonIsFavorite = computed(() =>
   selectedPokemon.value !== null && favoriteIds.value.includes(selectedPokemon.value.id),
+)
+const selectedPokemonIsOnTeam = computed(() =>
+  selectedPokemon.value !== null && team.value.some((pokemon) => pokemon.id === selectedPokemon.value?.id),
 )
 const activeList = computed<PokemonSummary[]>(() => {
   if (viewMode.value === 'all') {
@@ -153,6 +157,52 @@ function toggleFavorite(): void {
     localStorage.setItem('pokemon-favorite-ids', JSON.stringify(favoriteIds.value))
   } catch {
     // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function addToTeam(): void {
+  if (!selectedPokemon.value || selectedPokemonIsOnTeam.value || team.value.length >= 6) return
+
+  team.value = [...team.value, selectedPokemon.value]
+  saveTeam()
+}
+
+function removeFromTeam(id: number): void {
+  team.value = team.value.filter((pokemon) => pokemon.id !== id)
+  saveTeam()
+}
+
+function saveTeam(): void {
+  try {
+    localStorage.setItem('pokemon-team', JSON.stringify(team.value))
+  } catch {
+    // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function loadTeam(): PokemonDetail[] {
+  try {
+    const stored = localStorage.getItem('pokemon-team')
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+
+    if (!Array.isArray(parsed)) return []
+
+    const validPokemon = parsed.filter((pokemon): pokemon is PokemonDetail =>
+      typeof pokemon === 'object'
+      && pokemon !== null
+      && Number.isSafeInteger(pokemon.id)
+      && pokemon.id > 0
+      && typeof pokemon.name === 'string'
+      && Array.isArray(pokemon.types)
+      && pokemon.types.every((type: unknown) => typeof type === 'string')
+      && Array.isArray(pokemon.abilities)
+      && Array.isArray(pokemon.stats)
+      && typeof pokemon.spriteUrl === 'string',
+    )
+
+    return [...new Map(validPokemon.map((pokemon) => [pokemon.id, pokemon])).values()].slice(0, 6)
+  } catch {
+    return []
   }
 }
 
@@ -311,6 +361,16 @@ onUnmounted(() => {
           >
             {{ selectedPokemonIsFavorite ? '★ Favorite' : '☆ Add to favorites' }}
           </button>
+          <button
+            type="button"
+            :disabled="selectedPokemonIsOnTeam || team.length >= 6"
+            @click="addToTeam"
+          >
+            {{ selectedPokemonIsOnTeam ? 'On team' : team.length >= 6 ? 'Team full' : 'Add to team' }}
+          </button>
+          <p v-if="team.length >= 6 && !selectedPokemonIsOnTeam" class="state">
+            Your team is full. Remove a Pokémon to add another.
+          </p>
 
           <p><strong>Types:</strong> {{ selectedPokemon.types.join(', ') }}</p>
           <p><strong>Abilities:</strong> {{ selectedPokemon.abilities.join(', ') }}</p>
@@ -324,5 +384,27 @@ onUnmounted(() => {
         </article>
       </section>
     </div>
+
+    <section class="card teamSection" aria-labelledby="team-heading">
+      <header class="sectionHeader">
+        <h2 id="team-heading">My Team</h2>
+        <p>{{ team.length }} / 6 Pokémon</p>
+      </header>
+      <p v-if="team.length === 0" class="state">Your team is empty. Select a Pokémon and add it to your team.</p>
+      <ul v-else class="teamList">
+        <li v-for="pokemon in team" :key="pokemon.id" class="teamMember">
+          <img :src="pokemon.spriteUrl" :alt="pokemon.name">
+          <div>
+            <strong>#{{ pokemon.id }} {{ pokemon.name }}</strong>
+            <p>{{ pokemon.types.join(', ') }}</p>
+          </div>
+          <button
+            type="button"
+            :aria-label="`Remove ${pokemon.name} from team`"
+            @click="removeFromTeam(pokemon.id)"
+          >Remove</button>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>

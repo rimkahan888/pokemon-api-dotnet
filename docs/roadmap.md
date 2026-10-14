@@ -38,5 +38,10 @@ This roadmap tracks delivered milestones and the next opportunities for incremen
 - Add richer favorite metadata and management without requiring a detail request.
 - Continue improving responsive layout and accessibility based on usage.
 
+## Pokémon team builder
+
+- [x] Phase 1: Create and persist a six-Pokémon team with add/remove controls.
+- [ ] Phase 2: Analyze type coverage and shared weaknesses.
+- [ ] Phase 3: Polish team interactions and responsive/accessibility behavior.
 
 

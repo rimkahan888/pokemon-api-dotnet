@@ -15,6 +15,7 @@ afterEach(() => {
   vi.clearAllMocks()
   vi.useRealTimers()
   localStorage.removeItem('pokemon-favorite-ids')
+  localStorage.removeItem('pokemon-team')
 })
 
 describe('App.vue', () => {
@@ -210,6 +211,75 @@ describe('App.vue', () => {
 
     expect(wrapper.text()).toContain('No favorites yet.')
     expect(wrapper.find('.pager').exists()).toBe(false)
+  })
+
+  it('adds a selected Pokémon to the team and persists it', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite' }],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('button.item').trigger('click')
+    await flush()
+    await wrapper.findAll('button').find((button) => button.text() === 'Add to team')!.trigger('click')
+
+    expect(wrapper.text()).toContain('1 / 6 Pokémon')
+    expect(wrapper.text()).toContain('#25 pikachu')
+    expect(localStorage.getItem('pokemon-team')).toContain('"name":"pikachu"')
+    expect(wrapper.findAll('button').find((button) => button.text() === 'On team')!.element.disabled).toBe(true)
+  })
+
+  it('removes a team member and prevents adding beyond six Pokémon', async () => {
+    const team = Array.from({ length: 6 }, (_, index) => ({
+      id: index + 1,
+      name: `pokemon-${index + 1}`,
+      types: ['normal'],
+      abilities: ['ability'],
+      stats: [],
+      spriteUrl: `sprite-${index + 1}`,
+    }))
+    localStorage.setItem('pokemon-team', JSON.stringify(team))
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite' }],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('button.item').trigger('click')
+    await flush()
+
+    expect(wrapper.findAll('button').find((button) => button.text() === 'Team full')!.element.disabled).toBe(true)
+    expect(wrapper.text()).toContain('Your team is full.')
+
+    await wrapper.get('button[aria-label="Remove pokemon-1 from team"]').trigger('click')
+
+    expect(wrapper.text()).toContain('5 / 6 Pokémon')
+    expect(localStorage.getItem('pokemon-team')).not.toContain('"id":1')
   })
 
   it('searches for a Pokémon when the search form is submitted', async () => {
