@@ -483,12 +483,12 @@ describe('App.vue', () => {
     await flush()
     await wrapper.get('.pager button:last-child').trigger('click')
     await flush()
-    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(2, 2, 20)
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(2, 2, 20, '')
     expect(wrapper.text()).toContain('Page 2 of 2')
 
     await wrapper.get('.pager button:first-child').trigger('click')
     await flush()
-    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(3, 1, 20)
+    expect(mockedFetchPokemonPage).toHaveBeenNthCalledWith(3, 1, 20, '')
     expect(wrapper.text()).toContain('Page 1 of 2')
   })
 
@@ -530,26 +530,44 @@ describe('App.vue', () => {
     expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('filters Pokémon names case-insensitively and shows an empty match state', async () => {
-    mockedFetchPokemonPage.mockResolvedValue({
-      page: 1,
-      size: 20,
-      totalCount: 2,
-      totalPages: 1,
-      items: [
-        { id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' },
-        { id: 25, name: 'pikachu', spriteUrl: 'sprite-25' },
-      ],
-    })
+  it('searches the full catalog and shows an empty match state', async () => {
+    vi.useFakeTimers()
+    mockedFetchPokemonPage
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 2,
+        totalPages: 1,
+        items: [{ id: 1, name: 'bulbasaur', spriteUrl: 'sprite-1' }],
+      })
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 1,
+        totalPages: 1,
+        items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite-25' }],
+      })
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 0,
+        totalPages: 0,
+        items: [],
+      })
 
     const wrapper = mount(App)
     await flush()
-    const filterInput = wrapper.get('input[aria-label="Filter Pokémon list"]')
+    const filterInput = wrapper.get('input[aria-label="Search Pokémon catalog"]')
     await filterInput.setValue('PIKA')
+    await vi.advanceTimersByTimeAsync(350)
+    await flush()
 
+    expect(mockedFetchPokemonPage).toHaveBeenLastCalledWith(1, 20, 'PIKA')
     expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#25 pikachu'])
 
     await filterInput.setValue('missing')
+    await vi.advanceTimersByTimeAsync(350)
+    await flush()
 
     expect(wrapper.text()).toContain('No Pokémon match current filter.')
     expect(wrapper.findAll('.list .item')).toHaveLength(0)

@@ -98,6 +98,33 @@ public class PokemonApiServiceTests
     }
 
     [Fact]
+    public async Task SearchPokemonAsync_FiltersTheCachedCatalogByNameOrId_AndPaginatesMatches()
+    {
+        var client = new FakePokeApiClient
+        {
+            CatalogToReturn =
+            [
+                new PokeApiNamedResource { Name = "pikachu", Url = "https://pokeapi.co/api/v2/pokemon/25/" },
+                new PokeApiNamedResource { Name = "pidgey", Url = "https://pokeapi.co/api/v2/pokemon/16/" },
+                new PokeApiNamedResource { Name = "bulbasaur", Url = "https://pokeapi.co/api/v2/pokemon/1/" }
+            ]
+        };
+        var service = CreateService(client);
+
+        var firstPage = await service.SearchPokemonAsync("pi", 1, 1, CancellationToken.None);
+        var secondPage = await service.SearchPokemonAsync("pi", 2, 1, CancellationToken.None);
+        var byId = await service.SearchPokemonAsync("25", 1, 20, CancellationToken.None);
+
+        Assert.Equal(2, firstPage.TotalCount);
+        Assert.Equal(2, firstPage.TotalPages);
+        Assert.Equal("pikachu", firstPage.Items[0].Name);
+        Assert.Equal("pidgey", secondPage.Items[0].Name);
+        Assert.Single(byId.Items);
+        Assert.Equal(25, byId.Items[0].Id);
+        Assert.Equal(2, client.GetPokemonPageCallCount);
+    }
+
+    [Fact]
     public async Task GetPokemonAsync_ReturnsNull_WithoutCallingClient_ForBlankInput()
     {
         var client = new FakePokeApiClient();
@@ -162,6 +189,7 @@ public class PokemonApiServiceTests
     {
         public PokeApiPokemon? PokemonToReturn { get; init; }
         public PokeApiPokemonListResponse PageToReturn { get; init; } = new();
+        public List<PokeApiNamedResource>? CatalogToReturn { get; init; }
         public int GetPokemonCallCount { get; private set; }
         public int GetPokemonPageCallCount { get; private set; }
 
@@ -174,6 +202,15 @@ public class PokemonApiServiceTests
         public Task<PokeApiPokemonListResponse> GetPokemonPageAsync(int offset, int limit, CancellationToken cancellationToken)
         {
             GetPokemonPageCallCount++;
+            if (CatalogToReturn is not null)
+            {
+                return Task.FromResult(new PokeApiPokemonListResponse
+                {
+                    Count = CatalogToReturn.Count,
+                    Results = CatalogToReturn.Skip(offset).Take(limit).ToList()
+                });
+            }
+
             return Task.FromResult(PageToReturn);
         }
     }

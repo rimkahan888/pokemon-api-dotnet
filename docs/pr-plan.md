@@ -24,10 +24,10 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 12. [x] **Team builder, Phase 1** — Assemble and persist a team of up to six Pokémon.
 13. [x] **Team builder, Phase 2** — Show type coverage and shared weaknesses, accounting for dual-type matchups.
 14. [x] **Team builder, Phase 3** — Add accessible reorder controls and responsive team analysis layout.
+15. [x] **Catalog-wide search** — Search all Pokémon by name or ID with paginated results.
 
 ## Next opportunities
 
-- **Catalog-wide search** — Search across PokéAPI results rather than only the current page.
 - **Favorite metadata** — Keep names and sprites available in the favorites collection without a current-page lookup.
 - **Accessibility and responsive polish** — Continue refining keyboard and small-screen experiences.
 
@@ -40,4 +40,3 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 
 
 - editing the latest version of the document 
-
