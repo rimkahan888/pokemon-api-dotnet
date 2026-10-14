@@ -36,7 +36,7 @@ Goal: maximize consistent, showcaseable daily activity with focused PRs.
 
 
 
-
+- editing the latest version of the document 
 
 
 
