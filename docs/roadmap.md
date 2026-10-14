@@ -35,7 +35,7 @@ This roadmap tracks delivered milestones and the next opportunities for incremen
 ## Next opportunities
 
 - [x] Add server-side search and filters so queries span the complete PokéAPI catalog.
-- Add richer favorite metadata and management without requiring a detail request.
+- [x] Preserve favorite names and sprites and manage favorites directly from the list without loading details.
 - Continue improving responsive layout and accessibility based on usage.
 
 ## Pokémon team builder
