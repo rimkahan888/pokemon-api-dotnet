@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { fetchPokemonDetail, fetchPokemonPage } from '@/services/pokemonApi'
+import { analyzeTeam } from '@/services/teamAnalysis'
 import type { PokemonDetail, PokemonSummary } from '@/types/pokemon'
 
 const pageSize = 20
@@ -10,6 +11,7 @@ const totalCount = ref(0)
 const list = ref<PokemonSummary[]>([])
 const selectedPokemon = ref<PokemonDetail | null>(null)
 const favoriteIds = ref(loadFavoriteIds())
+const team = ref(loadTeam())
 const listLoading = ref(false)
 const detailLoading = ref(false)
 const listError = ref('')
@@ -28,6 +30,10 @@ const hasNext = computed(() => currentPage.value < totalPages.value)
 const selectedPokemonIsFavorite = computed(() =>
   selectedPokemon.value !== null && favoriteIds.value.includes(selectedPokemon.value.id),
 )
+const selectedPokemonIsOnTeam = computed(() =>
+  selectedPokemon.value !== null && team.value.some((pokemon) => pokemon.id === selectedPokemon.value?.id),
+)
+const teamAnalysis = computed(() => analyzeTeam(team.value))
 const activeList = computed<PokemonSummary[]>(() => {
   if (viewMode.value === 'all') {
     return list.value
@@ -153,6 +159,66 @@ function toggleFavorite(): void {
     localStorage.setItem('pokemon-favorite-ids', JSON.stringify(favoriteIds.value))
   } catch {
     // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function addToTeam(): void {
+  if (!selectedPokemon.value || selectedPokemonIsOnTeam.value || team.value.length >= 6) return
+
+  team.value = [...team.value, selectedPokemon.value]
+  saveTeam()
+}
+
+function removeFromTeam(id: number): void {
+  team.value = team.value.filter((pokemon) => pokemon.id !== id)
+  saveTeam()
+}
+
+function moveTeamMember(id: number, direction: -1 | 1): void {
+  const index = team.value.findIndex((pokemon) => pokemon.id === id)
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= team.value.length) return
+
+  const reordered = [...team.value]
+  const member = reordered[index]
+  if (!member) return
+  reordered.splice(index, 1)
+  reordered.splice(targetIndex, 0, member)
+  team.value = reordered
+  saveTeam()
+}
+
+function saveTeam(): void {
+  try {
+    localStorage.setItem('pokemon-team', JSON.stringify(team.value))
+  } catch {
+    // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function loadTeam(): PokemonDetail[] {
+  try {
+    const stored = localStorage.getItem('pokemon-team')
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+
+    if (!Array.isArray(parsed)) return []
+
+    const validPokemon = parsed.filter((pokemon): pokemon is PokemonDetail =>
+      typeof pokemon === 'object'
+      && pokemon !== null
+      && Number.isSafeInteger(pokemon.id)
+      && pokemon.id > 0
+      && typeof pokemon.name === 'string'
+      && Array.isArray(pokemon.types)
+      && pokemon.types.every((type: unknown) => typeof type === 'string')
+      && Array.isArray(pokemon.abilities)
+      && Array.isArray(pokemon.stats)
+      && typeof pokemon.spriteUrl === 'string',
+    )
+
+    return [...new Map(validPokemon.map((pokemon) => [pokemon.id, pokemon])).values()].slice(0, 6)
+  } catch {
+    return []
   }
 }
 
@@ -311,6 +377,16 @@ onUnmounted(() => {
           >
             {{ selectedPokemonIsFavorite ? '★ Favorite' : '☆ Add to favorites' }}
           </button>
+          <button
+            type="button"
+            :disabled="selectedPokemonIsOnTeam || team.length >= 6"
+            @click="addToTeam"
+          >
+            {{ selectedPokemonIsOnTeam ? 'On team' : team.length >= 6 ? 'Team full' : 'Add to team' }}
+          </button>
+          <p v-if="team.length >= 6 && !selectedPokemonIsOnTeam" class="state">
+            Your team is full. Remove a Pokémon to add another.
+          </p>
 
           <p><strong>Types:</strong> {{ selectedPokemon.types.join(', ') }}</p>
           <p><strong>Abilities:</strong> {{ selectedPokemon.abilities.join(', ') }}</p>
@@ -324,5 +400,59 @@ onUnmounted(() => {
         </article>
       </section>
     </div>
+
+    <section class="card teamSection" aria-labelledby="team-heading">
+      <header class="sectionHeader">
+        <h2 id="team-heading">My Team</h2>
+        <p aria-live="polite">{{ team.length }} / 6 Pokémon</p>
+      </header>
+      <p v-if="team.length === 0" class="state">Your team is empty. Select a Pokémon and add it to your team.</p>
+      <div v-else class="teamContent">
+        <ul class="teamList" aria-label="Team members">
+          <li v-for="(pokemon, index) in team" :key="pokemon.id" class="teamMember">
+            <img :src="pokemon.spriteUrl" :alt="`${pokemon.name} artwork`">
+            <div class="teamMemberInfo">
+              <strong>#{{ pokemon.id }} {{ pokemon.name }}</strong>
+              <p>{{ pokemon.types.join(', ') }}</p>
+            </div>
+            <div class="teamActions">
+              <button
+                type="button"
+                :disabled="index === 0"
+                :aria-label="`Move ${pokemon.name} up`"
+                @click="moveTeamMember(pokemon.id, -1)"
+              >↑</button>
+              <button
+                type="button"
+                :disabled="index === team.length - 1"
+                :aria-label="`Move ${pokemon.name} down`"
+                @click="moveTeamMember(pokemon.id, 1)"
+              >↓</button>
+              <button
+                type="button"
+                :aria-label="`Remove ${pokemon.name} from team`"
+                @click="removeFromTeam(pokemon.id)"
+              >Remove</button>
+            </div>
+          </li>
+        </ul>
+
+        <section class="teamAnalysis" aria-labelledby="team-analysis-heading">
+          <h3 id="team-analysis-heading">Team type analysis</h3>
+          <p><strong>Type coverage:</strong> {{ teamAnalysis.coverage.length }} of 18 types</p>
+          <ul class="typeList" aria-label="Types represented in team">
+            <li v-for="type in teamAnalysis.coverage" :key="type">{{ type }}</li>
+          </ul>
+          <h4>Shared weaknesses</h4>
+          <ul v-if="teamAnalysis.sharedWeaknesses.length" class="weaknessList">
+            <li v-for="weakness in teamAnalysis.sharedWeaknesses" :key="weakness.type">
+              <strong>{{ weakness.type }}</strong>: {{ weakness.pokemonNames.length }} Pokémon
+              ({{ weakness.pokemonNames.join(', ') }})
+            </li>
+          </ul>
+          <p v-else class="state">No shared weaknesses across two or more team members.</p>
+        </section>
+      </div>
+    </section>
   </div>
 </template>

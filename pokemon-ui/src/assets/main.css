@@ -36,6 +36,7 @@
 
 .search input {
   flex: 1;
+  min-width: 0;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0.5rem;
@@ -66,6 +67,13 @@ button {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 .sectionHeader {
@@ -132,4 +140,122 @@ button:disabled {
 .detail ul {
   margin: 0;
   padding-left: 1rem;
+}
+
+.teamSection {
+  margin-top: 1rem;
+}
+
+.teamList {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.teamMember {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.teamMember img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.teamMember div {
+  flex: 1;
+  min-width: 0;
+}
+
+.teamMemberInfo p {
+  overflow-wrap: anywhere;
+}
+
+.teamActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.teamAnalysis {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+}
+
+.teamAnalysis h3,
+.teamAnalysis h4 {
+  margin-bottom: 0.5rem;
+}
+
+.teamAnalysis h4 {
+  margin-top: 1rem;
+}
+
+.typeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin-top: 0.5rem;
+}
+
+.typeList li {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  text-transform: capitalize;
+}
+
+.weaknessList {
+  padding-left: 1.25rem;
+}
+
+.weaknessList li {
+  margin-bottom: 0.35rem;
+  text-transform: capitalize;
+}
+
+@media (max-width: 480px) {
+  #app {
+    padding: 0.75rem;
+  }
+
+  .teamMember {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .teamActions {
+    width: 100%;
+  }
+
+  .teamActions button:last-child {
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 700px) {
+  .teamContent {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .teamAnalysis {
+    border-top: 0;
+    border-left: 1px solid var(--color-border);
+    padding-top: 0;
+    padding-left: 1rem;
+  }
 }
