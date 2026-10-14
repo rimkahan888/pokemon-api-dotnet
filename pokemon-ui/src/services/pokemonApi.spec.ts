@@ -25,6 +25,23 @@ describe('pokemonApi', () => {
     expect(result.size).toBe(10)
   })
 
+  it('includes a catalog search term in the paginated request', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({
+        page: 1,
+        size: 20,
+        totalCount: 1,
+        totalPages: 1,
+        items: [],
+      }), { status: 200 }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fetchPokemonPage(1, 20, ' Mr Mime ')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/pokemon?page=1&size=20&search=Mr+Mime')
+  })
+
   it('encodes the Pokémon identifier in the detail request', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({

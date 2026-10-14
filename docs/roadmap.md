@@ -34,7 +34,7 @@ This roadmap tracks delivered milestones and the next opportunities for incremen
 
 ## Next opportunities
 
-- Add server-side search and filters so queries span the complete PokéAPI catalog.
+- [x] Add server-side search and filters so queries span the complete PokéAPI catalog.
 - Add richer favorite metadata and management without requiring a detail request.
 - Continue improving responsive layout and accessibility based on usage.
 
@@ -43,4 +43,3 @@ This roadmap tracks delivered milestones and the next opportunities for incremen
 - [x] Phase 1: Create and persist a six-Pokémon team with add/remove controls.
 - [x] Phase 2: Show represented types and shared weaknesses using combined dual-type matchups.
 - [x] Phase 3: Add keyboard-accessible reorder controls, responsive team layout, and clear analysis states.
-

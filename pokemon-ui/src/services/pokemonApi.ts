@@ -21,8 +21,13 @@ async function readJsonOrThrow<T>(response: Response): Promise<T> {
   return await response.json() as T
 }
 
-export async function fetchPokemonPage(page: number, size: number): Promise<PokemonPage> {
-  const response = await fetch(`${API_BASE}/pokemon?page=${page}&size=${size}`)
+export async function fetchPokemonPage(page: number, size: number, search = ''): Promise<PokemonPage> {
+  const params = new URLSearchParams({ page: String(page), size: String(size) })
+  if (search.trim()) {
+    params.set('search', search.trim())
+  }
+
+  const response = await fetch(`${API_BASE}/pokemon?${params}`)
   return readJsonOrThrow<PokemonPage>(response)
 }
 

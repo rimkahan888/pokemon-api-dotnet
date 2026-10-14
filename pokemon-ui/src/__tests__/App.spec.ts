@@ -530,7 +530,8 @@ describe('App.vue', () => {
     expect((wrapper.get('.pager button:last-child').element as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('filters Pokémon names case-insensitively and shows an empty match state', async () => {
+  it('searches the full catalog and shows an empty match state', async () => {
+    vi.useFakeTimers()
     mockedFetchPokemonPage.mockResolvedValue({
       page: 1,
       size: 20,
@@ -544,12 +545,17 @@ describe('App.vue', () => {
 
     const wrapper = mount(App)
     await flush()
-    const filterInput = wrapper.get('input[aria-label="Filter Pokémon list"]')
+    const filterInput = wrapper.get('input[aria-label="Search Pokémon catalog"]')
     await filterInput.setValue('PIKA')
+    await vi.advanceTimersByTimeAsync(350)
+    await flush()
 
+    expect(mockedFetchPokemonPage).toHaveBeenLastCalledWith(1, 20, 'PIKA')
     expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#25 pikachu'])
 
     await filterInput.setValue('missing')
+    await vi.advanceTimersByTimeAsync(350)
+    await flush()
 
     expect(wrapper.text()).toContain('No Pokémon match current filter.')
     expect(wrapper.findAll('.list .item')).toHaveLength(0)

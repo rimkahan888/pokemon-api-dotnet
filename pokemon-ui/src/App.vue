@@ -24,6 +24,7 @@ const debounceHandle = ref<ReturnType<typeof setTimeout> | null>(null)
 const debounceDelayMs = 350
 const suppressDebouncedSearch = ref(false)
 let latestDetailRequest = 0
+let latestListRequest = 0
 
 const hasPrev = computed(() => currentPage.value > 1)
 const hasNext = computed(() => currentPage.value < totalPages.value)
@@ -83,20 +84,25 @@ const filteredAndSortedList = computed(() => {
 })
 
 async function loadPage(page: number): Promise<void> {
+  const requestId = ++latestListRequest
   listLoading.value = true
   listError.value = ''
 
   try {
-    const payload = await fetchPokemonPage(page, pageSize)
+    const payload = await fetchPokemonPage(page, pageSize, filterText.value.trim())
+    if (requestId !== latestListRequest) return
     currentPage.value = payload.page
     totalPages.value = Math.max(payload.totalPages, 1)
     totalCount.value = payload.totalCount
     list.value = payload.items
   } catch (error) {
+    if (requestId !== latestListRequest) return
     listError.value = error instanceof Error ? error.message : 'Unable to load Pokémon list.'
     list.value = []
   } finally {
-    listLoading.value = false
+    if (requestId === latestListRequest) {
+      listLoading.value = false
+    }
   }
 }
 
@@ -251,6 +257,27 @@ onMounted(async () => {
   await loadPage(1)
 })
 
+watch(filterText, () => {
+  if (viewMode.value !== 'all') {
+    return
+  }
+
+  if (debounceHandle.value) {
+    clearTimeout(debounceHandle.value)
+  }
+
+  debounceHandle.value = setTimeout(() => {
+    debounceHandle.value = null
+    void loadPage(1)
+  }, debounceDelayMs)
+})
+
+watch(viewMode, (mode) => {
+  if (mode === 'all') {
+    void loadPage(1)
+  }
+})
+
 watch(search, (value) => {
   if (suppressDebouncedSearch.value) {
     return
@@ -319,8 +346,8 @@ onUnmounted(() => {
           <input
             v-model="filterText"
             type="text"
-            placeholder="Filter list by name"
-            aria-label="Filter Pokémon list"
+            placeholder="Search full catalog by name or ID"
+            aria-label="Search Pokémon catalog"
           >
           <select v-model="sortBy" aria-label="Sort Pokémon list">
             <option value="id-asc">ID (Ascending)</option>

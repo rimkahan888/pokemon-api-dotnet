@@ -36,8 +36,8 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
     public async Task<IActionResult> GetPokemonPage(
         [FromQuery] int page = 1,
         [FromQuery] int size = 20,
-        [FromQuery] string? search = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        [FromQuery] string? search = null)
     {
         if (page < 1)
         {

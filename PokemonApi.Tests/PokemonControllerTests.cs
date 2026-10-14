@@ -73,6 +73,37 @@ public class PokemonControllerTests
     }
 
     [Fact]
+    public async Task GetPokemonPage_ReturnsBadRequest_ForLongSearch()
+    {
+        var controller = new PokemonController(new FakePokemonService());
+
+        var result = await controller.GetPokemonPage(1, 20, CancellationToken.None, new string('a', 101));
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetPokemonPage_UsesCatalogSearch_WhenSearchIsProvided()
+    {
+        var expected = new PokemonPageDto(1, 20, 1, 1, [new PokemonSummaryDto(25, "pikachu", "sprite")]);
+        var controller = new PokemonController(new FakePokemonService
+        {
+            SearchPokemonAsyncImpl = (query, page, size, _) =>
+            {
+                Assert.Equal("pika", query);
+                Assert.Equal(1, page);
+                Assert.Equal(20, size);
+                return Task.FromResult(expected);
+            }
+        });
+
+        var result = await controller.GetPokemonPage(1, 20, CancellationToken.None, "pika");
+
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(expected, okResult.Value);
+    }
+
+    [Fact]
     public async Task GetPokemonPage_ReturnsOk_WithServiceDto()
     {
         var expected = new PokemonPageDto(2, 10, 20, 2, [new PokemonSummaryDto(25, "pikachu", "sprite")]);
@@ -122,10 +153,16 @@ public class PokemonControllerTests
         public Func<int, int, CancellationToken, Task<PokemonPageDto>> GetPokemonPageAsyncImpl { get; init; } =
             (page, size, _) => Task.FromResult<PokemonPageDto>(new PokemonPageDto(page, size, 1, 1, [new PokemonSummaryDto(1, "bulbasaur", "sprite")]));
 
+        public Func<string, int, int, CancellationToken, Task<PokemonPageDto>> SearchPokemonAsyncImpl { get; init; } =
+            (_, page, size, _) => Task.FromResult<PokemonPageDto>(new PokemonPageDto(page, size, 0, 0, []));
+
         public Task<PokemonDetailDto?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken) =>
             GetPokemonAsyncImpl(nameOrId, cancellationToken);
 
         public Task<PokemonPageDto> GetPokemonPageAsync(int page, int size, CancellationToken cancellationToken) =>
             GetPokemonPageAsyncImpl(page, size, cancellationToken);
+
+        public Task<PokemonPageDto> SearchPokemonAsync(string query, int page, int size, CancellationToken cancellationToken) =>
+            SearchPokemonAsyncImpl(query, page, size, cancellationToken);
     }
 }
