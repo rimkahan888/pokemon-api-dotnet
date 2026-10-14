@@ -11,6 +11,7 @@ const totalCount = ref(0)
 const list = ref<PokemonSummary[]>([])
 const selectedPokemon = ref<PokemonDetail | null>(null)
 const favoriteIds = ref(loadFavoriteIds())
+const favoriteMetadata = ref(loadFavoriteMetadata())
 const team = ref(loadTeam())
 const listLoading = ref(false)
 const detailLoading = ref(false)
@@ -42,6 +43,11 @@ const activeList = computed<PokemonSummary[]>(() => {
   }
 
   return favoriteIds.value.map((id) => {
+    const savedPokemon = favoriteMetadata.value.find((pokemon) => pokemon.id === id)
+    if (savedPokemon) {
+      return savedPokemon
+    }
+
     const knownPokemon = list.value.find((pokemon) => pokemon.id === id)
     if (knownPokemon) {
       return knownPokemon
@@ -96,6 +102,7 @@ async function loadPage(page: number): Promise<void> {
     totalPages.value = Math.max(payload.totalPages, 1)
     totalCount.value = payload.totalCount
     list.value = payload.items
+    saveKnownFavoriteMetadata()
   } catch (error) {
     if (requestId !== latestListRequest) return
     listError.value = error instanceof Error ? error.message : 'Unable to load Pokémon list.'
@@ -154,16 +161,40 @@ async function viewPokemon(id: number): Promise<void> {
   }
 }
 
-function toggleFavorite(): void {
-  if (!selectedPokemon.value) return
-
-  const id = selectedPokemon.value.id
-  favoriteIds.value = selectedPokemonIsFavorite.value
-    ? favoriteIds.value.filter((favoriteId) => favoriteId !== id)
-    : [...favoriteIds.value, id]
+function toggleFavorite(pokemon: PokemonSummary): void {
+  const isFavorite = favoriteIds.value.includes(pokemon.id)
+  favoriteIds.value = isFavorite
+    ? favoriteIds.value.filter((favoriteId) => favoriteId !== pokemon.id)
+    : [...favoriteIds.value, pokemon.id]
+  favoriteMetadata.value = isFavorite
+    ? favoriteMetadata.value.filter((favorite) => favorite.id !== pokemon.id)
+    : [...favoriteMetadata.value.filter((favorite) => favorite.id !== pokemon.id), {
+        id: pokemon.id,
+        name: pokemon.name,
+        spriteUrl: pokemon.spriteUrl,
+      }]
 
   try {
     localStorage.setItem('pokemon-favorite-ids', JSON.stringify(favoriteIds.value))
+    localStorage.setItem('pokemon-favorite-metadata', JSON.stringify(favoriteMetadata.value))
+  } catch {
+    // Keep the current session usable when browser storage is unavailable.
+  }
+}
+
+function saveKnownFavoriteMetadata(): void {
+  const knownFavorites = list.value.filter((pokemon) => favoriteIds.value.includes(pokemon.id))
+  if (knownFavorites.length === 0) return
+
+  favoriteMetadata.value = [
+    ...favoriteMetadata.value.filter((favorite) =>
+      !knownFavorites.some((pokemon) => pokemon.id === favorite.id),
+    ),
+    ...knownFavorites,
+  ]
+
+  try {
+    localStorage.setItem('pokemon-favorite-metadata', JSON.stringify(favoriteMetadata.value))
   } catch {
     // Keep the current session usable when browser storage is unavailable.
   }
@@ -239,6 +270,27 @@ function loadFavoriteIds(): number[] {
     return [...new Set(parsed.filter(
       (id): id is number => Number.isSafeInteger(id) && id > 0,
     ))]
+  } catch {
+    return []
+  }
+}
+
+function loadFavoriteMetadata(): PokemonSummary[] {
+  try {
+    const stored = localStorage.getItem('pokemon-favorite-metadata')
+    const parsed: unknown = stored ? JSON.parse(stored) : []
+
+    if (!Array.isArray(parsed)) return []
+
+    return [...new Map(parsed.filter((pokemon): pokemon is PokemonSummary =>
+      typeof pokemon === 'object'
+      && pokemon !== null
+      && Number.isSafeInteger(pokemon.id)
+      && pokemon.id > 0
+      && favoriteIds.value.includes(pokemon.id)
+      && typeof pokemon.name === 'string'
+      && typeof pokemon.spriteUrl === 'string',
+    ).map((pokemon) => [pokemon.id, pokemon])).values()]
   } catch {
     return []
   }
@@ -372,15 +424,25 @@ onUnmounted(() => {
 
         <ul v-else class="list">
           <li v-for="pokemon in filteredAndSortedList" :key="pokemon.id">
-            <button
-              class="item"
-              type="button"
-              :aria-label="`View Pokémon #${pokemon.id}${pokemon.name ? ` ${pokemon.name}` : ''}`"
-              @click="viewPokemon(pokemon.id)"
-            >
-              <img v-if="pokemon.spriteUrl" :src="pokemon.spriteUrl" :alt="pokemon.name">
-              <span>#{{ pokemon.id }}{{ pokemon.name ? ` ${pokemon.name}` : '' }}</span>
-            </button>
+            <div class="listEntry">
+              <button
+                class="item"
+                type="button"
+                :aria-label="`View Pokémon #${pokemon.id}${pokemon.name ? ` ${pokemon.name}` : ''}`"
+                @click="viewPokemon(pokemon.id)"
+              >
+                <img v-if="pokemon.spriteUrl" :src="pokemon.spriteUrl" :alt="pokemon.name">
+                <span>#{{ pokemon.id }}{{ pokemon.name ? ` ${pokemon.name}` : '' }}</span>
+              </button>
+              <button
+                type="button"
+                :aria-pressed="favoriteIds.includes(pokemon.id)"
+                :aria-label="favoriteIds.includes(pokemon.id) ? `Remove ${pokemon.name || `Pokémon #${pokemon.id}`} from favorites` : `Add ${pokemon.name || `Pokémon #${pokemon.id}`} to favorites`"
+                @click="toggleFavorite(pokemon)"
+              >
+                {{ favoriteIds.includes(pokemon.id) ? '★' : '☆' }}
+              </button>
+            </div>
           </li>
         </ul>
 
@@ -407,7 +469,7 @@ onUnmounted(() => {
             type="button"
             :aria-pressed="selectedPokemonIsFavorite"
             :aria-label="selectedPokemonIsFavorite ? 'Remove from favorites' : 'Add to favorites'"
-            @click="toggleFavorite"
+            @click="toggleFavorite(selectedPokemon)"
           >
             {{ selectedPokemonIsFavorite ? '★ Favorite' : '☆ Add to favorites' }}
           </button>
