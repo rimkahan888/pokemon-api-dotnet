@@ -75,6 +75,52 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
         return dto;
     }
 
+    public async Task<PokemonPageDto> SearchPokemonAsync(string query, int page, int size, CancellationToken cancellationToken)
+    {
+        var normalizedQuery = query.Trim();
+        var catalog = await GetPokemonCatalogAsync(cancellationToken);
+        var matches = catalog
+            .Where(pokemon =>
+                pokemon.Name.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)
+                || pokemon.Id.ToString().Contains(normalizedQuery, StringComparison.Ordinal))
+            .ToList();
+        var offset = ((long)page - 1) * size;
+        var items = offset >= matches.Count
+            ? []
+            : matches.Skip((int)offset).Take(size).ToList();
+
+        return new PokemonPageDto(
+            page,
+            size,
+            matches.Count,
+            (int)Math.Ceiling(matches.Count / (double)size),
+            items);
+    }
+
+    private async Task<IReadOnlyList<PokemonSummaryDto>> GetPokemonCatalogAsync(CancellationToken cancellationToken)
+    {
+        const string cacheKey = "pokemon-catalog";
+
+        if (cache.TryGetValue<IReadOnlyList<PokemonSummaryDto>>(cacheKey, out var cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var firstPage = await pokeApiClient.GetPokemonPageAsync(0, 1, cancellationToken);
+        var catalog = firstPage.Count <= firstPage.Results.Count
+            ? firstPage.Results
+            : (await pokeApiClient.GetPokemonPageAsync(0, firstPage.Count, cancellationToken)).Results;
+        var items = catalog
+            .Select(MapSummary)
+            .Where(static item => item is not null)
+            .Cast<PokemonSummaryDto>()
+            .ToList();
+
+        var listDuration = TimeSpan.FromMinutes(_options.ListCacheMinutes > 0 ? _options.ListCacheMinutes : 5);
+        cache.Set(cacheKey, items, listDuration);
+        return items;
+    }
+
     private PokemonDetailDto MapDetail(PokeApiPokemon pokemon)
     {
         var fallbackBase = _options.FallbackSpriteBaseUrl.TrimEnd('/');

@@ -33,7 +33,11 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetPokemonPage([FromQuery] int page = 1, [FromQuery] int size = 20, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetPokemonPage(
+        [FromQuery] int page = 1,
+        [FromQuery] int size = 20,
+        [FromQuery] string? search = null,
+        CancellationToken cancellationToken = default)
     {
         if (page < 1)
         {
@@ -45,9 +49,16 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
             return BadRequest(new { error = "Size must be between 1 and 100." });
         }
 
+        if (search?.Length > 100)
+        {
+            return BadRequest(new { error = "Search must be 100 characters or fewer." });
+        }
+
         try
         {
-            var result = await pokemonService.GetPokemonPageAsync(page, size, cancellationToken);
+            var result = string.IsNullOrWhiteSpace(search)
+                ? await pokemonService.GetPokemonPageAsync(page, size, cancellationToken)
+                : await pokemonService.SearchPokemonAsync(search, page, size, cancellationToken);
             return Ok(result);
         }
         catch (UpstreamServiceException ex)
