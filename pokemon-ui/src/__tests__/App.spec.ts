@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.vue'
 import * as pokemonApi from '@/services/pokemonApi'
+import type { PokemonDetail } from '@/types/pokemon'
 
 vi.mock('@/services/pokemonApi', () => ({
   fetchPokemonPage: vi.fn(),
@@ -280,6 +281,52 @@ describe('App.vue', () => {
 
     expect(wrapper.text()).toContain('5 / 6 Pokémon')
     expect(localStorage.getItem('pokemon-team')).not.toContain('"id":1')
+  })
+
+  it('shows team type analysis and allows accessible member reordering', async () => {
+    localStorage.setItem('pokemon-team', JSON.stringify([
+      {
+        id: 6,
+        name: 'charizard',
+        types: ['fire', 'flying'],
+        abilities: ['blaze'],
+        stats: [],
+        spriteUrl: 'charizard-sprite',
+      },
+      {
+        id: 130,
+        name: 'gyarados',
+        types: ['water', 'flying'],
+        abilities: ['intimidate'],
+        stats: [],
+        spriteUrl: 'gyarados-sprite',
+      },
+    ]))
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 0,
+      totalPages: 0,
+      items: [],
+    })
+
+    const wrapper = mount(App)
+    await flush()
+
+    expect(wrapper.text()).toContain('Type coverage: 3 of 18 types')
+    expect(wrapper.text()).toContain('electric: 2 Pokémon (charizard, gyarados)')
+    expect(wrapper.text()).toContain('rock: 2 Pokémon (charizard, gyarados)')
+    expect((wrapper.get('button[aria-label="Move charizard up"]').element as HTMLButtonElement).disabled).toBe(true)
+    expect((wrapper.get('button[aria-label="Move gyarados down"]').element as HTMLButtonElement).disabled).toBe(true)
+
+    await wrapper.get('button[aria-label="Move charizard down"]').trigger('click')
+
+    expect(wrapper.findAll('.teamMemberInfo strong').map((member) => member.text())).toEqual([
+      '#130 gyarados',
+      '#6 charizard',
+    ])
+    expect(JSON.parse(localStorage.getItem('pokemon-team')!).map((pokemon: PokemonDetail) => pokemon.id))
+      .toEqual([130, 6])
   })
 
   it('searches for a Pokémon when the search form is submitted', async () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { fetchPokemonDetail, fetchPokemonPage } from '@/services/pokemonApi'
+import { analyzeTeam } from '@/services/teamAnalysis'
 import type { PokemonDetail, PokemonSummary } from '@/types/pokemon'
 
 const pageSize = 20
@@ -32,6 +33,7 @@ const selectedPokemonIsFavorite = computed(() =>
 const selectedPokemonIsOnTeam = computed(() =>
   selectedPokemon.value !== null && team.value.some((pokemon) => pokemon.id === selectedPokemon.value?.id),
 )
+const teamAnalysis = computed(() => analyzeTeam(team.value))
 const activeList = computed<PokemonSummary[]>(() => {
   if (viewMode.value === 'all') {
     return list.value
@@ -169,6 +171,17 @@ function addToTeam(): void {
 
 function removeFromTeam(id: number): void {
   team.value = team.value.filter((pokemon) => pokemon.id !== id)
+  saveTeam()
+}
+
+function moveTeamMember(id: number, direction: -1 | 1): void {
+  const index = team.value.findIndex((pokemon) => pokemon.id === id)
+  const targetIndex = index + direction
+  if (index < 0 || targetIndex < 0 || targetIndex >= team.value.length) return
+
+  const reordered = [...team.value]
+  ;[reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]]
+  team.value = reordered
   saveTeam()
 }
 
@@ -388,23 +401,55 @@ onUnmounted(() => {
     <section class="card teamSection" aria-labelledby="team-heading">
       <header class="sectionHeader">
         <h2 id="team-heading">My Team</h2>
-        <p>{{ team.length }} / 6 Pokémon</p>
+        <p aria-live="polite">{{ team.length }} / 6 Pokémon</p>
       </header>
       <p v-if="team.length === 0" class="state">Your team is empty. Select a Pokémon and add it to your team.</p>
-      <ul v-else class="teamList">
-        <li v-for="pokemon in team" :key="pokemon.id" class="teamMember">
-          <img :src="pokemon.spriteUrl" :alt="pokemon.name">
-          <div>
-            <strong>#{{ pokemon.id }} {{ pokemon.name }}</strong>
-            <p>{{ pokemon.types.join(', ') }}</p>
-          </div>
-          <button
-            type="button"
-            :aria-label="`Remove ${pokemon.name} from team`"
-            @click="removeFromTeam(pokemon.id)"
-          >Remove</button>
-        </li>
-      </ul>
+      <div v-else class="teamContent">
+        <ul class="teamList" aria-label="Team members">
+          <li v-for="(pokemon, index) in team" :key="pokemon.id" class="teamMember">
+            <img :src="pokemon.spriteUrl" :alt="`${pokemon.name} artwork`">
+            <div class="teamMemberInfo">
+              <strong>#{{ pokemon.id }} {{ pokemon.name }}</strong>
+              <p>{{ pokemon.types.join(', ') }}</p>
+            </div>
+            <div class="teamActions">
+              <button
+                type="button"
+                :disabled="index === 0"
+                :aria-label="`Move ${pokemon.name} up`"
+                @click="moveTeamMember(pokemon.id, -1)"
+              >↑</button>
+              <button
+                type="button"
+                :disabled="index === team.length - 1"
+                :aria-label="`Move ${pokemon.name} down`"
+                @click="moveTeamMember(pokemon.id, 1)"
+              >↓</button>
+              <button
+                type="button"
+                :aria-label="`Remove ${pokemon.name} from team`"
+                @click="removeFromTeam(pokemon.id)"
+              >Remove</button>
+            </div>
+          </li>
+        </ul>
+
+        <section class="teamAnalysis" aria-labelledby="team-analysis-heading">
+          <h3 id="team-analysis-heading">Team type analysis</h3>
+          <p><strong>Type coverage:</strong> {{ teamAnalysis.coverage.length }} of 18 types</p>
+          <ul class="typeList" aria-label="Types represented in team">
+            <li v-for="type in teamAnalysis.coverage" :key="type">{{ type }}</li>
+          </ul>
+          <h4>Shared weaknesses</h4>
+          <ul v-if="teamAnalysis.sharedWeaknesses.length" class="weaknessList">
+            <li v-for="weakness in teamAnalysis.sharedWeaknesses" :key="weakness.type">
+              <strong>{{ weakness.type }}</strong>: {{ weakness.pokemonNames.length }} Pokémon
+              ({{ weakness.pokemonNames.join(', ') }})
+            </li>
+          </ul>
+          <p v-else class="state">No shared weaknesses across two or more team members.</p>
+        </section>
+      </div>
     </section>
   </div>
 </template>
