@@ -55,3 +55,8 @@ Frontend runs on Vite and proxies `/api/*` requests to `http://localhost:5010`; 
 - `GET /health`
 - `GET /api/pokemon/{nameOrId}`
 - `GET /api/pokemon?page={n}&size={m}`
+
+
+
+
+
