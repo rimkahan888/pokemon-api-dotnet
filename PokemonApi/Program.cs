@@ -4,6 +4,7 @@ using PokemonApi.Configuration;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using PokemonApi.Health;
+using PokemonApi.Http;
 using PokemonApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +51,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
 app.MapHealthChecks("/health", new HealthCheckOptions
