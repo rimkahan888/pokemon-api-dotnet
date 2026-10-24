@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using PokemonApi.Clients;
 using PokemonApi.Configuration;
 using PokemonApi.Exceptions;
+using PokemonApi.Normalization;
 using PokemonApi.Models;
 
 namespace PokemonApi.Services;
@@ -13,7 +14,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
 
     public async Task<PokemonDetailDto?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken)
     {
-        var normalized = nameOrId.Trim().ToLowerInvariant();
+        var normalized = PokemonNameNormalizer.Normalize(nameOrId);
 
         if (string.IsNullOrWhiteSpace(normalized))
         {
@@ -77,7 +78,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
 
     public async Task<PokemonPageDto> SearchPokemonAsync(string query, int page, int size, CancellationToken cancellationToken)
     {
-        var normalizedQuery = query.Trim();
+        var normalizedQuery = PokemonNameNormalizer.Normalize(query);
         var catalog = await GetPokemonCatalogAsync(cancellationToken);
         var matches = catalog
             .Where(pokemon =>
