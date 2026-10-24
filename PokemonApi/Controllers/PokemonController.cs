@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PokemonApi.Exceptions;
+using PokemonApi.Models;
 using PokemonApi.Services;
 
 namespace PokemonApi.Controllers;
@@ -9,6 +10,10 @@ namespace PokemonApi.Controllers;
 public class PokemonController(IPokemonService pokemonService) : ControllerBase
 {
     [HttpGet("{nameOrId}")]
+    [ProducesResponseType<PokemonDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> GetPokemon(string nameOrId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(nameOrId) || nameOrId.Length > 50)
@@ -33,6 +38,9 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
     }
 
     [HttpGet]
+    [ProducesResponseType<PokemonPageDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> GetPokemonPage(
         [FromQuery] int page = 1,
         [FromQuery] int size = 20,

@@ -5,7 +5,17 @@ using PokemonApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Info.Title = "Pokémon Data Explorer API";
+        document.Info.Version = "v1";
+        document.Info.Description =
+            "Normalized Pokémon list, catalog search, and detail endpoints backed by PokéAPI.";
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddMemoryCache();
 builder.Services.AddControllers();
 
