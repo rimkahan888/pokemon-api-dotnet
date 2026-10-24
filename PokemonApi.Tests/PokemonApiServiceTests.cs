@@ -17,6 +17,8 @@ public class PokemonApiServiceTests
             {
                 Id = 25,
                 Name = "pikachu",
+                Height = 4,
+                Weight = 60,
                 Sprites = new PokeApiSprites { FrontDefault = null },
                 Types = [new PokeApiTypeSlot { Type = new PokeApiNamedResource { Name = "electric" } }],
                 Abilities = [new PokeApiAbilitySlot { Ability = new PokeApiNamedResource { Name = "static" } }],
@@ -39,6 +41,8 @@ public class PokemonApiServiceTests
         Assert.Equal("speed", first.Stats[0].Name);
         Assert.Equal(55, first.Stats[0].Value);
         Assert.Equal("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png", first.SpriteUrl);
+        Assert.Equal(4, first.HeightDecimeters);
+        Assert.Equal(60, first.WeightHectograms);
         Assert.Equal(first, second);
         Assert.Equal(1, client.GetPokemonCallCount);
     }

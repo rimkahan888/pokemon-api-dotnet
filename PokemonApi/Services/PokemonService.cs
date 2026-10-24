@@ -134,7 +134,9 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
             pokemon.Types.Select(t => t.Type.Name).ToList(),
             pokemon.Abilities.Select(a => a.Ability.Name).ToList(),
             pokemon.Stats.Select(s => new PokemonStatDto(s.Stat.Name, s.BaseStat)).ToList(),
-            sprite);
+            sprite,
+            pokemon.Height,
+            pokemon.Weight);
     }
 
     private PokemonSummaryDto? MapSummary(PokeApiNamedResource resource)
