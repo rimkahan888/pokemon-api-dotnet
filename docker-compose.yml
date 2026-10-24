@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: PokemonApi/Dockerfile
+    ports:
+      - "5010:8080"
+
+  ui:
+    build:
+      context: ./pokemon-ui
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
