@@ -23,11 +23,16 @@ builder.Services.AddHttpClient<IPokeApiClient, PokeApiClient>((serviceProvider, 
 
 builder.Services.AddScoped<IPokemonService, PokemonService>();
 
+var allowedOrigins = builder.Configuration.GetSection(FrontendCorsOptions.SectionName)
+    .Get<FrontendCorsOptions>()
+    ?.ResolveOrigins()
+    ?? FrontendCorsOptions.DefaultOrigins;
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
     });
 });
 
