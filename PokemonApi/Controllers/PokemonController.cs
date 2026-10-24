@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PokemonApi.Exceptions;
 using PokemonApi.Models;
 using PokemonApi.Services;
@@ -7,8 +9,10 @@ namespace PokemonApi.Controllers;
 
 [ApiController]
 [Route("api/pokemon")]
-public class PokemonController(IPokemonService pokemonService) : ControllerBase
+public class PokemonController(IPokemonService pokemonService, ILogger<PokemonController>? logger = null) : ControllerBase
 {
+    private readonly ILogger<PokemonController> _logger = logger ?? NullLogger<PokemonController>.Instance;
+
     [HttpGet("{nameOrId}")]
     [ProducesResponseType<PokemonDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -31,8 +35,9 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
                 _ => Ok(result)
             };
         }
-        catch (UpstreamServiceException)
+        catch (UpstreamServiceException ex)
         {
+            _logger.LogWarning(ex, "PokéAPI detail request for {NameOrId} failed.", nameOrId);
             return ApiProblem(StatusCodes.Status503ServiceUnavailable, "PokéAPI is temporarily unavailable.");
         }
     }
@@ -76,6 +81,7 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
                 return ApiProblem(StatusCodes.Status400BadRequest, "Requested page is out of range.");
             }
 
+            _logger.LogWarning(ex, "PokéAPI list request failed for page {Page}.", page);
             return ApiProblem(StatusCodes.Status503ServiceUnavailable, "PokéAPI is temporarily unavailable.");
         }
     }

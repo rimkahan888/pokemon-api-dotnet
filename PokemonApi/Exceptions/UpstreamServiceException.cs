@@ -1,3 +1,7 @@
 namespace PokemonApi.Exceptions;
 
-public class UpstreamServiceException(string message, Exception? innerException = null) : Exception(message, innerException);
+public class UpstreamServiceException(string message, Exception? innerException = null, bool isTransient = true)
+    : Exception(message, innerException)
+{
+    public bool IsTransient { get; } = isTransient;
+}

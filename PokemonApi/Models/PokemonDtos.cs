@@ -6,7 +6,9 @@ public record PokemonDetailDto(
     IReadOnlyList<string> Types,
     IReadOnlyList<string> Abilities,
     IReadOnlyList<PokemonStatDto> Stats,
-    string SpriteUrl);
+    string SpriteUrl,
+    int HeightDecimeters = 0,
+    int WeightHectograms = 0);
 
 public record PokemonStatDto(string Name, int Value);
 

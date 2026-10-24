@@ -17,6 +17,8 @@ public class PokemonApiServiceTests
             {
                 Id = 25,
                 Name = "pikachu",
+                Height = 4,
+                Weight = 60,
                 Sprites = new PokeApiSprites { FrontDefault = null },
                 Types = [new PokeApiTypeSlot { Type = new PokeApiNamedResource { Name = "electric" } }],
                 Abilities = [new PokeApiAbilitySlot { Ability = new PokeApiNamedResource { Name = "static" } }],
@@ -39,6 +41,8 @@ public class PokemonApiServiceTests
         Assert.Equal("speed", first.Stats[0].Name);
         Assert.Equal(55, first.Stats[0].Value);
         Assert.Equal("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png", first.SpriteUrl);
+        Assert.Equal(4, first.HeightDecimeters);
+        Assert.Equal(60, first.WeightHectograms);
         Assert.Equal(first, second);
         Assert.Equal(1, client.GetPokemonCallCount);
     }
@@ -125,6 +129,24 @@ public class PokemonApiServiceTests
     }
 
     [Fact]
+    public async Task SearchPokemonAsync_MatchesHyphenatedNamesWhenTheQueryUsesSpaces()
+    {
+        var client = new FakePokeApiClient
+        {
+            CatalogToReturn =
+            [
+                new PokeApiNamedResource { Name = "mr-mime", Url = "https://pokeapi.co/api/v2/pokemon/122/" }
+            ]
+        };
+        var service = CreateService(client);
+
+        var result = await service.SearchPokemonAsync("Mr Mime", 1, 20, CancellationToken.None);
+
+        Assert.Single(result.Items);
+        Assert.Equal(122, result.Items[0].Id);
+    }
+
+    [Fact]
     public async Task GetPokemonAsync_ReturnsNull_WithoutCallingClient_ForBlankInput()
     {
         var client = new FakePokeApiClient();
@@ -177,6 +199,24 @@ public class PokemonApiServiceTests
 
         Assert.NotNull(result);
         Assert.Equal("https://custom-sprites.example.com/7.png", result.SpriteUrl);
+    }
+
+    [Fact]
+    public async Task GetPokemonPageAsync_ThrowsWhenPageIsPastAnEmptyCatalog()
+    {
+        var client = new FakePokeApiClient
+        {
+            PageToReturn = new PokeApiPokemonListResponse { Count = 0, Results = [] }
+        };
+        var service = CreateService(client);
+
+        var first = await service.GetPokemonPageAsync(1, 20, CancellationToken.None);
+        var ex = await Assert.ThrowsAsync<UpstreamServiceException>(() =>
+            service.GetPokemonPageAsync(2, 20, CancellationToken.None));
+
+        Assert.Empty(first.Items);
+        Assert.Equal(0, first.TotalCount);
+        Assert.Contains("out of range", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     private static PokemonService CreateService(IPokeApiClient client)
