@@ -23,6 +23,7 @@ cd pokemon-api-dotnet
 - Favorites and a six-Pokémon team with type coverage and shared weaknesses
 - Backend caching and retry/timeout handling for PokéAPI calls
 - Loading/error states in frontend
+- Animated porch and forest backgrounds, with glass panels that respect reduced motion
 
 ## Architecture
 
@@ -32,11 +33,29 @@ pokemon-ui (Vue) -- /api --> PokemonController --> PokemonService --> PokeApiCli
 
 The Vue app calls same-origin `/api` routes. In development, Vite proxies those requests to the API on port 5010. `PokemonController` checks page, size, and search input. `PokemonService` maps PokéAPI payloads into the DTOs the UI renders and caches list, detail, and catalog responses in memory. `PokeApiClient` applies the configured timeout and retries transient upstream failures. Favorites and the team roster stay in the browser's `localStorage`.
 
-## Screenshot
+## Gallery
 
-![Pokémon Data Explorer running locally](docs/images/pokemon-data-explorer.png)
+Landscape and desktop windows use the sunset porch. Portrait windows, including phones and a vertical monitor, use the rainy forest pond. Both paintings are served as AVIF, WebP, and JPEG. Canvas rain, light, dust or petals, and ripples sit on top of the picture, and they pause when reduced motion is requested or the tab is hidden. The panels are dark glass so the type and stat text stay readable. On a wide screen, Pikachu stays visible along the left side of the porch.
 
-The screenshot shows the app running while PokéAPI was unreachable from the capture environment.
+### Scenes
+
+| Forest pond (portrait) | Village porch (landscape) |
+| --- | --- |
+| ![Pikachu by a rainy forest pond](docs/images/bg-forest-portrait.webp) | ![Pikachu on a rainy village porch at sunset](docs/images/bg-porch-landscape.webp) |
+
+### Explorer
+
+![Catalog on a landscape desktop](docs/images/ui-catalog-desktop.webp)
+
+![Bulbasaur details on a landscape desktop](docs/images/ui-detail-desktop.webp)
+
+![Catalog on a portrait screen](docs/images/ui-catalog-portrait.webp)
+
+![Details and team on a portrait screen](docs/images/ui-detail-portrait.webp)
+
+Rain, lantern light, and opening a Pokémon:
+
+![Animated explorer](docs/images/ui-motion.gif)
 
 ## Incremental planning docs
 - `docs/roadmap.md`

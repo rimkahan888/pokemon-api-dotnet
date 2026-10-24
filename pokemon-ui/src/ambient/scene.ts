@@ -199,11 +199,11 @@ export function createSceneState(random: () => number = Math.random): SceneState
   const rain: RainStreak[] = Array.from({ length: RAIN_COUNT }, () => ({
     x: random() * 1.2 - 0.1,
     y: random(),
-    length: 16 + random() * 18,
-    speed: 0.62 + random() * 0.45,
-    slant: 0.14 + random() * 0.16,
-    alpha: 0.16 + random() * 0.28,
-    thickness: 1 + random() * 0.7,
+    length: 22 + random() * 26,
+    speed: 0.7 + random() * 0.5,
+    slant: 0.16 + random() * 0.18,
+    alpha: 0.34 + random() * 0.4,
+    thickness: 1.25 + random() * 1.05,
   }))
 
   const rippleSources = [...FOREST_RIPPLES, ...PORCH_PUDDLES]
@@ -218,14 +218,14 @@ export function createSceneState(random: () => number = Math.random): SceneState
   const petals: Petal[] = Array.from({ length: PETAL_COUNT }, () => ({
     x: 0.64 + random() * 0.42,
     y: -0.35 + random() * 1.1,
-    size: 3.5 + random() * 4.5,
-    speed: 0.045 + random() * 0.05,
+    size: 5 + random() * 6,
+    speed: 0.05 + random() * 0.055,
     sway: 14 + random() * 28,
     swaySpeed: 0.7 + random() * 0.8,
     phase: random() * Math.PI * 2,
     spin: random() * Math.PI * 2,
     spinSpeed: 0.4 + random() * 0.9,
-    alpha: 0.45 + random() * 0.4,
+    alpha: 0.62 + random() * 0.32,
   }))
 
   return { dust, rain, ripples, petals }
@@ -272,8 +272,8 @@ export function stepScene(state: SceneState, dt: number, random: () => number = 
 }
 
 export function lanternIntensity(phase: number, time: number): number {
-  const slow = 0.78 + 0.22 * Math.sin(time * 1.6 + phase)
-  const flicker = 0.9 + 0.1 * Math.sin(time * 13 + phase * 2)
+  const slow = 0.62 + 0.38 * Math.sin(time * 2.1 + phase)
+  const flicker = 0.82 + 0.18 * Math.sin(time * 14 + phase * 2)
   return Math.min(1, Math.max(0, slow * flicker))
 }
 
