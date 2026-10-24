@@ -21,8 +21,10 @@ builder.Services.AddControllers();
 
 builder.Services.AddHealthChecks();
 
-builder.Services.Configure<PokeApiOptions>(
-    builder.Configuration.GetSection(PokeApiOptions.SectionName));
+builder.Services.AddSingleton<IValidateOptions<PokeApiOptions>, PokeApiOptionsValidator>();
+builder.Services.AddOptions<PokeApiOptions>()
+    .Bind(builder.Configuration.GetSection(PokeApiOptions.SectionName))
+    .ValidateOnStart();
 
 builder.Services.AddHttpClient<IPokeApiClient, PokeApiClient>((serviceProvider, client) =>
 {
