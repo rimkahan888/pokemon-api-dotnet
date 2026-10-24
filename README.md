@@ -24,6 +24,10 @@ The screenshot shows the app running while PokéAPI was unreachable from the cap
 - `docs/roadmap.md`
 - `docs/pr-plan.md`
 
+## Frontend handoff
+
+[`docs/frontend-handoff/FRONTEND_BRIEF.md`](docs/frontend-handoff/FRONTEND_BRIEF.md) is a self-contained brief for generating a replacement UI against this API. The captured OpenAPI document is [`docs/frontend-handoff/openapi.json`](docs/frontend-handoff/openapi.json). Regenerate it with `docs/frontend-handoff/export-openapi.sh`.
+
 ## Project Structure
 - `PokemonApi.sln` – Root .NET solution
 - `PokemonApi` – C# backend
