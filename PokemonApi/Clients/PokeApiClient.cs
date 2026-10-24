@@ -1,5 +1,7 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using PokemonApi.Configuration;
 using PokemonApi.Exceptions;
@@ -7,10 +9,11 @@ using PokemonApi.Models;
 
 namespace PokemonApi.Clients;
 
-public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? options = null) : IPokeApiClient
+public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? options = null, ILogger<PokeApiClient>? logger = null) : IPokeApiClient
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
     private readonly PokeApiOptions _options = options?.Value ?? new PokeApiOptions();
+    private readonly ILogger<PokeApiClient> _logger = logger ?? NullLogger<PokeApiClient>.Instance;
 
     public async Task<PokeApiPokemon?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken)
     {
@@ -76,6 +79,12 @@ public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? opti
                 }
 
                 lastError = ex;
+                _logger.LogWarning(
+                    ex,
+                    "PokéAPI request to {RelativeUrl} failed on attempt {Attempt} of {MaxAttempts}.",
+                    relativeUrl,
+                    attempt,
+                    retryAttempts);
 
                 if (attempt < retryAttempts)
                 {
@@ -84,6 +93,11 @@ public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? opti
             }
         }
 
+        _logger.LogError(
+            lastError,
+            "PokéAPI request to {RelativeUrl} failed after {MaxAttempts} attempts.",
+            relativeUrl,
+            retryAttempts);
         throw new UpstreamServiceException("Unable to fetch data from PokéAPI after retries.", lastError);
     }
 }

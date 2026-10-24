@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using PokemonApi.Clients;
 using PokemonApi.Exceptions;
 
@@ -68,13 +69,15 @@ public class PokeApiClientTests
         {
             BaseAddress = new Uri("https://pokeapi.co/api/v2/")
         };
-        var client = new PokeApiClient(httpClient);
+        var logger = new CollectingLogger<PokeApiClient>();
+        var client = new PokeApiClient(httpClient, logger: logger);
 
         var result = await client.GetPokemonPageAsync(20, 20, CancellationToken.None);
 
         Assert.Equal("https://pokeapi.co/api/v2/pokemon?offset=20&limit=20", requestedUri?.AbsoluteUri);
         Assert.Equal(2, requestCount);
         Assert.Equal(1, result.Count);
+        Assert.Equal(1, logger.WarningCount);
     }
 
     [Fact]
@@ -107,6 +110,36 @@ public class PokeApiClientTests
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
+
+    private sealed class CollectingLogger<T> : ILogger<T>
+    {
+        public int WarningCount { get; private set; }
+
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Warning)
+            {
+                WarningCount++;
+            }
+        }
+
+        private sealed class NullScope : IDisposable
+        {
+            public static readonly NullScope Instance = new();
+            public void Dispose()
+            {
+            }
+        }
+    }
 
     private sealed class TestHttpMessageHandler(
         Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendAsync) : HttpMessageHandler
