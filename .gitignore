@@ -1,0 +1,39 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+TestResults/
+[Cc]overage/
+*.trx
+*.coverage
+*.coveragexml
+
+# .NET user and IDE files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+artifacts/
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+
+# OS and editors
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Secrets
+.env
+.env.*
+!.env.example
