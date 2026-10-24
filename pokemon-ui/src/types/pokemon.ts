@@ -10,6 +10,8 @@ export interface PokemonDetail {
   abilities: string[]
   stats: PokemonStat[]
   spriteUrl: string
+  heightDecimeters?: number
+  weightHectograms?: number
 }
 
 export interface PokemonSummary {
@@ -24,4 +26,12 @@ export interface PokemonPage {
   totalCount: number
   totalPages: number
   items: PokemonSummary[]
+}
+
+export type SortOption = 'id-asc' | 'id-desc' | 'name-asc' | 'name-desc'
+
+export interface SharedWeakness {
+  type: string
+  count: number
+  pokemonNames: string[]
 }

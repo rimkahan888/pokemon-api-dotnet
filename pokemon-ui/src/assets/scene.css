@@ -1,0 +1,174 @@
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: #070b10;
+}
+
+.ambient-shift {
+  position: absolute;
+  inset: -24px;
+}
+
+.ambient-picture,
+.ambient-img,
+.ambient-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.ambient-img {
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 60%;
+}
+
+.ambient-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(5, 10, 12, 0.74) 0%, rgba(5, 10, 12, 0.4) 14%, rgba(5, 10, 12, 0.52) 64%, rgba(4, 8, 10, 0.76) 100%),
+    radial-gradient(ellipse 88% 78% at 50% 42%, rgba(6, 12, 14, 0.08), rgba(4, 8, 10, 0.58));
+}
+
+@media (orientation: landscape) and (min-aspect-ratio: 1/1) {
+  .ambient-img {
+    object-position: 24% 58%;
+  }
+
+  .ambient-shade {
+    background:
+      linear-gradient(90deg, rgba(18, 12, 10, 0.02) 0%, rgba(16, 12, 14, 0.16) 16%, rgba(8, 10, 16, 0.46) 40%, rgba(6, 8, 14, 0.64) 100%),
+      linear-gradient(180deg, rgba(10, 12, 20, 0.48) 0%, rgba(10, 12, 20, 0.1) 18%, rgba(8, 10, 16, 0.22) 72%, rgba(6, 8, 12, 0.5) 100%);
+  }
+}
+
+.glass-panel {
+  background: rgba(10, 13, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-panel:hover,
+.glass-panel:focus-within {
+  border-color: rgba(255, 214, 150, 0.28);
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.4),
+    0 0 32px rgba(255, 186, 80, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-bar {
+  background: rgba(8, 10, 14, 0.72);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+}
+
+.glass-inset {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes panel-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.panel-enter {
+  animation: panel-enter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.panel-enter-2 { animation-delay: 90ms; }
+.panel-enter-3 { animation-delay: 160ms; }
+
+@keyframes catalog-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.catalog-row {
+  animation: catalog-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes detail-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+.detail-enter {
+  animation: detail-enter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes sprite-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.sprite-bob {
+  position: relative;
+  z-index: 1;
+  animation: sprite-bob 3.8s ease-in-out infinite;
+}
+
+.type-glow { position: relative; }
+
+.type-glow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 9.5rem;
+  height: 9.5rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--type-glow, #fbbf24) 0%, var(--type-glow-2, transparent) 46%, transparent 72%);
+  filter: blur(8px);
+  pointer-events: none;
+  animation: glow-pulse 3.8s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.94); }
+  50% { opacity: 0.92; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+@keyframes star-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); }
+  100% { transform: scale(1); }
+}
+
+.star-pop {
+  animation: star-pop 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes team-pop {
+  0% { transform: scale(0.94); }
+  45% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.team-pop {
+  animation: team-pop 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-row,
+  .detail-enter,
+  .panel-enter,
+  .sprite-bob,
+  .star-pop,
+  .team-pop,
+  .type-glow::before {
+    animation: none !important;
+  }
+}

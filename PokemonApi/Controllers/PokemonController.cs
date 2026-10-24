@@ -1,19 +1,28 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using PokemonApi.Exceptions;
+using PokemonApi.Models;
 using PokemonApi.Services;
 
 namespace PokemonApi.Controllers;
 
 [ApiController]
 [Route("api/pokemon")]
-public class PokemonController(IPokemonService pokemonService) : ControllerBase
+public class PokemonController(IPokemonService pokemonService, ILogger<PokemonController>? logger = null) : ControllerBase
 {
+    private readonly ILogger<PokemonController> _logger = logger ?? NullLogger<PokemonController>.Instance;
+
     [HttpGet("{nameOrId}")]
+    [ProducesResponseType<PokemonDetailDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> GetPokemon(string nameOrId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(nameOrId) || nameOrId.Length > 50)
         {
-            return BadRequest(new { error = "nameOrId must be between 1 and 50 characters." });
+            return ApiProblem(StatusCodes.Status400BadRequest, "nameOrId must be between 1 and 50 characters.");
         }
 
         try
@@ -22,17 +31,21 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
 
             return result switch
             {
-                null => NotFound(new { error = "Pokemon not found." }),
+                null => ApiProblem(StatusCodes.Status404NotFound, "Pokemon not found."),
                 _ => Ok(result)
             };
         }
-        catch (UpstreamServiceException)
+        catch (UpstreamServiceException ex)
         {
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "PokéAPI is temporarily unavailable." });
+            _logger.LogWarning(ex, "PokéAPI detail request for {NameOrId} failed.", nameOrId);
+            return ApiProblem(StatusCodes.Status503ServiceUnavailable, "PokéAPI is temporarily unavailable.");
         }
     }
 
     [HttpGet]
+    [ProducesResponseType<PokemonPageDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> GetPokemonPage(
         [FromQuery] int page = 1,
         [FromQuery] int size = 20,
@@ -41,17 +54,17 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
     {
         if (page < 1)
         {
-            return BadRequest(new { error = "Page must be greater than or equal to 1." });
+            return ApiProblem(StatusCodes.Status400BadRequest, "Page must be greater than or equal to 1.");
         }
 
         if (size is < 1 or > 100)
         {
-            return BadRequest(new { error = "Size must be between 1 and 100." });
+            return ApiProblem(StatusCodes.Status400BadRequest, "Size must be between 1 and 100.");
         }
 
         if (search?.Length > 100)
         {
-            return BadRequest(new { error = "Search must be 100 characters or fewer." });
+            return ApiProblem(StatusCodes.Status400BadRequest, "Search must be 100 characters or fewer.");
         }
 
         try
@@ -65,10 +78,32 @@ public class PokemonController(IPokemonService pokemonService) : ControllerBase
         {
             if (ex.Message.Contains("out of range", StringComparison.OrdinalIgnoreCase))
             {
-                return BadRequest(new { error = "Requested page is out of range." });
+                return ApiProblem(StatusCodes.Status400BadRequest, "Requested page is out of range.");
             }
 
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { error = "PokéAPI is temporarily unavailable." });
+            _logger.LogWarning(ex, "PokéAPI list request failed for page {Page}.", page);
+            return ApiProblem(StatusCodes.Status503ServiceUnavailable, "PokéAPI is temporarily unavailable.");
         }
+    }
+
+    private IActionResult ApiProblem(int statusCode, string message)
+    {
+        var result = Problem(
+            detail: message,
+            statusCode: statusCode,
+            title: statusCode switch
+            {
+                StatusCodes.Status400BadRequest => "Bad Request",
+                StatusCodes.Status404NotFound => "Not Found",
+                StatusCodes.Status503ServiceUnavailable => "Service Unavailable",
+                _ => "Error"
+            });
+
+        if (result is ObjectResult { Value: ProblemDetails problem })
+        {
+            problem.Extensions["error"] = message;
+        }
+
+        return result;
     }
 }

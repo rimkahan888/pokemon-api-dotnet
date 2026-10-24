@@ -1,6 +1,21 @@
-@PokemonApi_HostAddress = http://localhost:5238
+@PokemonApi_HostAddress = http://localhost:5010
 
-GET {{PokemonApi_HostAddress}}/weatherforecast/
+GET {{PokemonApi_HostAddress}}/health
+Accept: application/json
+
+###
+
+GET {{PokemonApi_HostAddress}}/api/pokemon?page=1&size=20
+Accept: application/json
+
+###
+
+GET {{PokemonApi_HostAddress}}/api/pokemon?search=pikachu&page=1&size=20
+Accept: application/json
+
+###
+
+GET {{PokemonApi_HostAddress}}/api/pokemon/pikachu
 Accept: application/json
 
 ###

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PokemonApi.Controllers;
 using PokemonApi.Exceptions;
@@ -15,7 +16,7 @@ public class PokemonControllerTests
 
         var result = await controller.GetPokemon("", CancellationToken.None);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        AssertProblem(result, StatusCodes.Status400BadRequest, "nameOrId must be between 1 and 50 characters.");
     }
 
     [Fact]
@@ -28,7 +29,7 @@ public class PokemonControllerTests
 
         var result = await controller.GetPokemon("missing", CancellationToken.None);
 
-        Assert.IsType<NotFoundObjectResult>(result);
+        AssertProblem(result, StatusCodes.Status404NotFound, "Pokemon not found.");
     }
 
     [Fact]
@@ -56,8 +57,7 @@ public class PokemonControllerTests
 
         var result = await controller.GetPokemon("pikachu", CancellationToken.None);
 
-        var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(503, objectResult.StatusCode);
+        AssertProblem(result, StatusCodes.Status503ServiceUnavailable, "PokéAPI is temporarily unavailable.");
     }
 
     [Fact]
@@ -68,8 +68,8 @@ public class PokemonControllerTests
         var badPage = await controller.GetPokemonPage(0, 20, CancellationToken.None);
         var badSize = await controller.GetPokemonPage(1, 101, CancellationToken.None);
 
-        Assert.IsType<BadRequestObjectResult>(badPage);
-        Assert.IsType<BadRequestObjectResult>(badSize);
+        AssertProblem(badPage, StatusCodes.Status400BadRequest, "Page must be greater than or equal to 1.");
+        AssertProblem(badSize, StatusCodes.Status400BadRequest, "Size must be between 1 and 100.");
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class PokemonControllerTests
 
         var result = await controller.GetPokemonPage(1, 20, CancellationToken.None, new string('a', 101));
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        AssertProblem(result, StatusCodes.Status400BadRequest, "Search must be 100 characters or fewer.");
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class PokemonControllerTests
 
         var result = await controller.GetPokemonPage(2, 20, CancellationToken.None);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        AssertProblem(result, StatusCodes.Status400BadRequest, "Requested page is out of range.");
     }
 
     [Fact]
@@ -141,8 +141,18 @@ public class PokemonControllerTests
 
         var result = await controller.GetPokemonPage(1, 20, CancellationToken.None);
 
+        AssertProblem(result, StatusCodes.Status503ServiceUnavailable, "PokéAPI is temporarily unavailable.");
+    }
+
+
+    private static void AssertProblem(IActionResult result, int statusCode, string message)
+    {
         var objectResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(503, objectResult.StatusCode);
+        Assert.Equal(statusCode, objectResult.StatusCode);
+        var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal(statusCode, problem.Status);
+        Assert.Equal(message, problem.Detail);
+        Assert.Equal(message, problem.Extensions["error"]);
     }
 
     private sealed class FakePokemonService : IPokemonService

@@ -1,6 +1,15 @@
 # Pokémon Data Explorer
 
-Planning-first project to build a C# backend integrated with PokéAPI and a Vue frontend.
+[![CI](https://github.com/rimkahan888/pokemon-api-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/rimkahan888/pokemon-api-dotnet/actions/workflows/ci.yml)
+
+`pokemon-api-dotnet` is an ASP.NET Core Web API and Vue 3 frontend for browsing Pokémon from [PokéAPI](https://pokeapi.co/). Search by name or ID, page through the catalog, save favorites, and build a team of six.
+
+## Clone
+
+```bash
+git clone https://github.com/rimkahan888/pokemon-api-dotnet.git
+cd pokemon-api-dotnet
+```
 
 ## Stack
 - Backend: ASP.NET Core Web API
@@ -9,20 +18,52 @@ Planning-first project to build a C# backend integrated with PokéAPI and a Vue 
 
 ## Features (MVP)
 - Search Pokémon by name or ID
-- Paginated Pokémon list
+- Paginated Pokémon list and catalog-wide search
 - Pokémon detail panel (types, abilities, stats, sprite)
+- Favorites and a six-Pokémon team with type coverage and shared weaknesses
 - Backend caching and retry/timeout handling for PokéAPI calls
 - Loading/error states in frontend
+- Animated porch and forest backgrounds, with glass panels that respect reduced motion
 
-## Screenshot
+## Architecture
 
-![Pokémon Data Explorer running locally](docs/images/pokemon-data-explorer.png)
+```text
+pokemon-ui (Vue) -- /api --> PokemonController --> PokemonService --> PokeApiClient --> PokéAPI
+```
 
-The screenshot shows the app running while PokéAPI was unreachable from the capture environment.
+The Vue app calls same-origin `/api` routes. In development, Vite proxies those requests to the API on port 5010. `PokemonController` checks page, size, and search input. `PokemonService` maps PokéAPI payloads into the DTOs the UI renders and caches list, detail, and catalog responses in memory. `PokeApiClient` applies the configured timeout and retries transient upstream failures. Favorites and the team roster stay in the browser's `localStorage`.
+
+## Gallery
+
+Landscape and desktop windows use the sunset porch. Portrait windows, including phones and a vertical monitor, use the rainy forest pond. Both paintings are served as AVIF, WebP, and JPEG. Canvas rain, light, dust or petals, and ripples sit on top of the picture, and they pause when reduced motion is requested or the tab is hidden. The panels are dark glass so the type and stat text stay readable. On a wide screen, Pikachu stays visible along the left side of the porch.
+
+### Scenes
+
+| Forest pond (portrait) | Village porch (landscape) |
+| --- | --- |
+| ![Pikachu by a rainy forest pond](docs/images/bg-forest-portrait.webp) | ![Pikachu on a rainy village porch at sunset](docs/images/bg-porch-landscape.webp) |
+
+### Explorer
+
+![Catalog on a landscape desktop](docs/images/ui-catalog-desktop.webp)
+
+![Bulbasaur details on a landscape desktop](docs/images/ui-detail-desktop.webp)
+
+![Catalog on a portrait screen](docs/images/ui-catalog-portrait.webp)
+
+![Details and team on a portrait screen](docs/images/ui-detail-portrait.webp)
+
+Rain, lantern light, and opening a Pokémon:
+
+![Animated explorer](docs/images/ui-motion.gif)
 
 ## Incremental planning docs
 - `docs/roadmap.md`
 - `docs/pr-plan.md`
+
+## Frontend handoff
+
+[`docs/frontend-handoff/FRONTEND_BRIEF.md`](docs/frontend-handoff/FRONTEND_BRIEF.md) is a self-contained brief for generating a replacement UI against this API. The captured OpenAPI document is [`docs/frontend-handoff/openapi.json`](docs/frontend-handoff/openapi.json). Regenerate it with `docs/frontend-handoff/export-openapi.sh`.
 
 ## Project Structure
 - `PokemonApi.sln` – Root .NET solution
@@ -55,8 +96,4 @@ Frontend runs on Vite and proxies `/api/*` requests to `http://localhost:5010`; 
 - `GET /health`
 - `GET /api/pokemon/{nameOrId}`
 - `GET /api/pokemon?page={n}&size={m}`
-
-
-
-
-
+- `GET /api/pokemon?search={query}&page={n}&size={m}` — catalog search by name or ID. `page` is at least 1 and `size` is from 1 to 100.
