@@ -51,9 +51,17 @@ public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? opti
                     return default;
                 }
 
-                if ((int)response.StatusCode >= 500)
+                var statusCode = (int)response.StatusCode;
+                if (statusCode is >= 500 or 408 or 429)
                 {
-                    throw new UpstreamServiceException($"PokéAPI returned status code {(int)response.StatusCode}.");
+                    throw new UpstreamServiceException($"PokéAPI returned status code {statusCode}.");
+                }
+
+                if (statusCode >= 400)
+                {
+                    throw new UpstreamServiceException(
+                        $"PokéAPI returned status code {statusCode}.",
+                        isTransient: false);
                 }
 
                 response.EnsureSuccessStatusCode();
@@ -68,9 +76,27 @@ public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? opti
 
                 return payload;
             }
+            catch (JsonException ex)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                lastError = ex;
+                if (attempt < retryAttempts)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(backoffMs * attempt), cancellationToken);
+                }
+            }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UpstreamServiceException)
             {
                 if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                if (ex is UpstreamServiceException { IsTransient: false })
                 {
                     throw;
                 }
