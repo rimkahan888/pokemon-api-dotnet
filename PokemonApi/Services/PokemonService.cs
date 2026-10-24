@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using PokemonApi.Clients;
 using PokemonApi.Configuration;
 using PokemonApi.Exceptions;
+using PokemonApi.Normalization;
 using PokemonApi.Models;
 
 namespace PokemonApi.Services;
@@ -13,7 +14,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
 
     public async Task<PokemonDetailDto?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken)
     {
-        var normalized = nameOrId.Trim().ToLowerInvariant();
+        var normalized = PokemonNameNormalizer.Normalize(nameOrId);
 
         if (string.IsNullOrWhiteSpace(normalized))
         {
@@ -52,7 +53,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
         var offset = (page - 1) * size;
         var list = await pokeApiClient.GetPokemonPageAsync(offset, size, cancellationToken);
 
-        if (list.Count <= offset && list.Count > 0)
+        if (page > 1 && offset >= list.Count)
         {
             throw new UpstreamServiceException("Requested page is out of range.");
         }
@@ -77,7 +78,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
 
     public async Task<PokemonPageDto> SearchPokemonAsync(string query, int page, int size, CancellationToken cancellationToken)
     {
-        var normalizedQuery = query.Trim();
+        var normalizedQuery = PokemonNameNormalizer.Normalize(query);
         var catalog = await GetPokemonCatalogAsync(cancellationToken);
         var matches = catalog
             .Where(pokemon =>
@@ -134,7 +135,9 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
             pokemon.Types.Select(t => t.Type.Name).ToList(),
             pokemon.Abilities.Select(a => a.Ability.Name).ToList(),
             pokemon.Stats.Select(s => new PokemonStatDto(s.Stat.Name, s.BaseStat)).ToList(),
-            sprite);
+            sprite,
+            pokemon.Height,
+            pokemon.Weight);
     }
 
     private PokemonSummaryDto? MapSummary(PokeApiNamedResource resource)

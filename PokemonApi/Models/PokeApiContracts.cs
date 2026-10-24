@@ -10,6 +10,12 @@ public sealed class PokeApiPokemon
     [JsonPropertyName("name")]
     public string Name { get; init; } = string.Empty;
 
+    [JsonPropertyName("height")]
+    public int Height { get; init; }
+
+    [JsonPropertyName("weight")]
+    public int Weight { get; init; }
+
     [JsonPropertyName("types")]
     public List<PokeApiTypeSlot> Types { get; init; } = [];
 
