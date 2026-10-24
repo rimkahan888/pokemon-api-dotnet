@@ -52,7 +52,7 @@ public class PokemonService(IPokeApiClient pokeApiClient, IMemoryCache cache, IO
         var offset = (page - 1) * size;
         var list = await pokeApiClient.GetPokemonPageAsync(offset, size, cancellationToken);
 
-        if (list.Count <= offset && list.Count > 0)
+        if (page > 1 && offset >= list.Count)
         {
             throw new UpstreamServiceException("Requested page is out of range.");
         }

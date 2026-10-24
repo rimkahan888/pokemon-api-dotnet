@@ -179,6 +179,24 @@ public class PokemonApiServiceTests
         Assert.Equal("https://custom-sprites.example.com/7.png", result.SpriteUrl);
     }
 
+    [Fact]
+    public async Task GetPokemonPageAsync_ThrowsWhenPageIsPastAnEmptyCatalog()
+    {
+        var client = new FakePokeApiClient
+        {
+            PageToReturn = new PokeApiPokemonListResponse { Count = 0, Results = [] }
+        };
+        var service = CreateService(client);
+
+        var first = await service.GetPokemonPageAsync(1, 20, CancellationToken.None);
+        var ex = await Assert.ThrowsAsync<UpstreamServiceException>(() =>
+            service.GetPokemonPageAsync(2, 20, CancellationToken.None));
+
+        Assert.Empty(first.Items);
+        Assert.Equal(0, first.TotalCount);
+        Assert.Contains("out of range", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static PokemonService CreateService(IPokeApiClient client)
     {
         var cache = new MemoryCache(new MemoryCacheOptions());
