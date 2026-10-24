@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 using PokemonApi.Configuration;
+using PokemonApi.Normalization;
 using PokemonApi.Exceptions;
 using PokemonApi.Models;
 
@@ -14,7 +15,7 @@ public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? opti
 
     public async Task<PokeApiPokemon?> GetPokemonAsync(string nameOrId, CancellationToken cancellationToken)
     {
-        var normalized = nameOrId.Trim().ToLowerInvariant();
+        var normalized = PokemonNameNormalizer.Normalize(nameOrId);
 
         if (string.IsNullOrWhiteSpace(normalized))
         {

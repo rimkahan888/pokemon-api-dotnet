@@ -125,6 +125,24 @@ public class PokemonApiServiceTests
     }
 
     [Fact]
+    public async Task SearchPokemonAsync_MatchesHyphenatedNamesWhenTheQueryUsesSpaces()
+    {
+        var client = new FakePokeApiClient
+        {
+            CatalogToReturn =
+            [
+                new PokeApiNamedResource { Name = "mr-mime", Url = "https://pokeapi.co/api/v2/pokemon/122/" }
+            ]
+        };
+        var service = CreateService(client);
+
+        var result = await service.SearchPokemonAsync("Mr Mime", 1, 20, CancellationToken.None);
+
+        Assert.Single(result.Items);
+        Assert.Equal(122, result.Items[0].Id);
+    }
+
+    [Fact]
     public async Task GetPokemonAsync_ReturnsNull_WithoutCallingClient_ForBlankInput()
     {
         var client = new FakePokeApiClient();
