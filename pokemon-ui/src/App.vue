@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import AmbientBackground from '@/components/AmbientBackground.vue'
 import HeaderNav from '@/components/HeaderNav.vue'
 import PokemonCatalog from '@/components/PokemonCatalog.vue'
 import PokemonDetailCard from '@/components/PokemonDetailCard.vue'
@@ -315,7 +316,8 @@ onUnmounted(() => {
 
 <template>
   <a class="skip-link" href="#main-content">Skip to content</a>
-  <div class="min-h-screen">
+  <AmbientBackground />
+  <div class="relative z-10 min-h-screen">
     <HeaderNav
       v-model="search"
       :team-count="team.length"
