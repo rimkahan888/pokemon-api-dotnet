@@ -27,7 +27,7 @@ public class PokeApiClientTests
 
         var result = await client.GetPokemonAsync(" Mr Mime ", CancellationToken.None);
 
-        Assert.Equal("https://pokeapi.co/api/v2/pokemon/mr%20mime", requestedUri?.AbsoluteUri);
+        Assert.Equal("https://pokeapi.co/api/v2/pokemon/mr-mime", requestedUri?.AbsoluteUri);
         Assert.Equal("PokemonApi/1.0 (+https://github.com/rimkahan888/pokemon-api-dotnet)", userAgent);
         Assert.NotNull(result);
         Assert.Equal(25, result.Id);
