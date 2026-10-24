@@ -105,6 +105,53 @@ public class PokeApiClientTests
         Assert.Equal(1, requestCount);
     }
 
+    [Fact]
+    public async Task GetPokemonAsync_DoesNotRetryAClientError()
+    {
+        var requestCount = 0;
+        using var httpClient = new HttpClient(new TestHttpMessageHandler((_, _) =>
+        {
+            requestCount++;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest));
+        }))
+        {
+            BaseAddress = new Uri("https://pokeapi.co/api/v2/")
+        };
+        var client = new PokeApiClient(httpClient);
+
+        var ex = await Assert.ThrowsAsync<UpstreamServiceException>(() =>
+            client.GetPokemonAsync("pikachu", CancellationToken.None));
+
+        Assert.Equal(1, requestCount);
+        Assert.False(ex.IsTransient);
+        Assert.Contains("400", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetPokemonAsync_WrapsInvalidJsonAfterTheConfiguredAttempts()
+    {
+        var requestCount = 0;
+        using var httpClient = new HttpClient(new TestHttpMessageHandler((_, _) =>
+        {
+            requestCount++;
+            return Task.FromResult(JsonResponse("not-json"));
+        }))
+        {
+            BaseAddress = new Uri("https://pokeapi.co/api/v2/")
+        };
+        var options = Microsoft.Extensions.Options.Options.Create(new PokemonApi.Configuration.PokeApiOptions
+        {
+            RetryAttempts = 2,
+            RetryBackoffMilliseconds = 1
+        });
+        var client = new PokeApiClient(httpClient, options);
+
+        await Assert.ThrowsAsync<UpstreamServiceException>(() =>
+            client.GetPokemonAsync("pikachu", CancellationToken.None));
+
+        Assert.Equal(2, requestCount);
+    }
+
     private static HttpResponseMessage JsonResponse(string json) =>
         new(HttpStatusCode.OK)
         {
