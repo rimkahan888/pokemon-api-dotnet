@@ -27,3 +27,11 @@ export interface PokemonPage {
   totalPages: number
   items: PokemonSummary[]
 }
+
+export type SortOption = 'id-asc' | 'id-desc' | 'name-asc' | 'name-desc'
+
+export interface SharedWeakness {
+  type: string
+  count: number
+  pokemonNames: string[]
+}
