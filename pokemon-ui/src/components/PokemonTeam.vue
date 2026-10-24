@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { readPrefersReducedMotion } from '@/ambient/scene'
 import { ArrowDown, ArrowUp, Shield, ShieldAlert, Trash2, Users } from '@lucide/vue'
 import { analyzeTeam, POKEMON_TYPES } from '@/services/teamAnalysis'
 import type { PokemonDetail } from '@/types/pokemon'
@@ -17,10 +18,28 @@ const emit = defineEmits<{
 }>()
 
 const analysis = computed(() => analyzeTeam(props.team))
+const poppedId = ref<number | null>(null)
+
+watch(
+  () => props.team.map((member) => member.id),
+  (ids, previous) => {
+    if (!previous || readPrefersReducedMotion()) return
+    const previousIds = new Set(previous)
+    const added = ids.find((id) => !previousIds.has(id))
+    if (added == null) return
+    poppedId.value = null
+    const frame = globalThis.requestAnimationFrame
+    const apply = () => {
+      poppedId.value = added
+    }
+    if (typeof frame === 'function') frame(apply)
+    else apply()
+  },
+)
 </script>
 
 <template>
-  <section id="team-section" class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-6 shadow-lg">
+  <section id="team-section" class="glass-panel panel-enter panel-enter-3 rounded-2xl p-4 sm:p-6">
     <div class="flex items-center justify-between pb-4 border-b border-zinc-800/80 gap-3">
       <div class="flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
@@ -56,8 +75,11 @@ const analysis = computed(() => analyzeTeam(props.team))
         <div
           v-for="(member, index) in team"
           :key="member.id"
-          class="group bg-zinc-950/80 border rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer"
-          :class="selectedPokemonId === member.id ? 'border-amber-500/40 bg-amber-500/5' : 'border-zinc-800/80'"
+          class="group glass-inset rounded-xl p-3 flex items-center justify-between gap-3 cursor-pointer"
+          :class="[
+            selectedPokemonId === member.id ? 'border-amber-500/40 bg-amber-500/10' : '',
+            { 'team-pop': poppedId === member.id },
+          ]"
           tabindex="0"
           @click="emit('select-pokemon', member)"
           @keydown.enter="emit('select-pokemon', member)"
@@ -108,7 +130,7 @@ const analysis = computed(() => analyzeTeam(props.team))
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-zinc-800/80">
-        <div class="bg-zinc-950/70 border border-zinc-800/70 rounded-xl p-4">
+        <div class="glass-inset rounded-xl p-4">
           <div class="flex items-center justify-between pb-3 border-b border-zinc-800/60">
             <div class="flex items-center gap-2">
               <Shield class="w-4 h-4 text-amber-400" />
@@ -133,7 +155,7 @@ const analysis = computed(() => analyzeTeam(props.team))
           </div>
         </div>
 
-        <div class="bg-zinc-950/70 border border-zinc-800/70 rounded-xl p-4">
+        <div class="glass-inset rounded-xl p-4">
           <div class="flex items-center justify-between pb-3 border-b border-zinc-800/60">
             <div class="flex items-center gap-2">
               <ShieldAlert class="w-4 h-4 text-rose-400" />

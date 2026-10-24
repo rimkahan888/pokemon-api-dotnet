@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { readPrefersReducedMotion } from '@/ambient/scene'
 import {
   AlertCircle,
   ChevronLeft,
@@ -64,6 +65,22 @@ function favoriteLabel(pokemon: PokemonSummary, saved: boolean): string {
   return saved ? `Remove ${name} from favorites` : `Add ${name} to favorites`
 }
 
+const poppedFavoriteId = ref<number | null>(null)
+
+function onToggleFavorite(pokemon: PokemonSummary): void {
+  emit('toggle-favorite', pokemon)
+  if (readPrefersReducedMotion()) return
+  poppedFavoriteId.value = null
+  const frame = globalThis.requestAnimationFrame
+  if (typeof frame !== 'function') {
+    poppedFavoriteId.value = pokemon.id
+    return
+  }
+  frame(() => {
+    poppedFavoriteId.value = pokemon.id
+  })
+}
+
 const emptyMessage = computed(() => {
   const filtering = props.searchQuery.trim().length > 0
   const favoritesEmpty = props.activeTab === 'favorites' && props.favoriteIds.length === 0
@@ -78,7 +95,7 @@ const emptyMessage = computed(() => {
 </script>
 
 <template>
-  <div class="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 flex flex-col h-full shadow-lg">
+  <div class="glass-panel panel-enter rounded-2xl p-4 sm:p-5 flex flex-col h-full">
     <div class="flex items-center justify-between pb-4 border-b border-zinc-800/80 gap-3">
       <div>
         <h2 class="text-lg font-semibold text-zinc-100 tracking-tight">
@@ -210,14 +227,15 @@ const emptyMessage = computed(() => {
       <p class="text-sm font-medium text-zinc-300">{{ emptyMessage }}</p>
     </div>
 
-    <div v-else class="list flex-1 overflow-y-auto space-y-2 pr-1 py-1 min-h-[360px]" role="list">
+    <div v-else :key="activeTab" class="list flex-1 overflow-y-auto space-y-2 pr-1 py-1 min-h-[360px]" role="list">
       <div
-        v-for="pokemon in sortedItems"
+        v-for="(pokemon, index) in sortedItems"
         :key="pokemon.id"
-        class="item group flex items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all duration-150 cursor-pointer focus:outline-none"
+        class="catalog-row item group flex items-center justify-between p-2.5 sm:p-3 rounded-xl border transition-all duration-150 cursor-pointer focus:outline-none"
+        :style="{ animationDelay: `${Math.min(index, 14) * 42}ms` }"
         :class="selectedPokemonId === pokemon.id
           ? 'bg-amber-500/10 border-amber-500/40 text-amber-300 shadow-sm'
-          : 'bg-zinc-950/70 hover:bg-zinc-800/40 border-zinc-800/80 text-zinc-200'"
+          : 'bg-black/25 hover:bg-white/[0.07] border-white/10 text-zinc-200 hover:border-amber-200/30 hover:shadow-[0_0_24px_rgba(255,186,80,0.14)]'"
         role="listitem"
         tabindex="0"
         :aria-selected="selectedPokemonId === pokemon.id"
@@ -244,10 +262,10 @@ const emptyMessage = computed(() => {
         <button
           type="button"
           class="p-2 rounded-lg text-zinc-500 hover:text-amber-400 hover:bg-zinc-800/60 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors"
-          :class="{ 'text-amber-400': isFavorite(pokemon.id) }"
+          :class="{ 'text-amber-400': isFavorite(pokemon.id), 'star-pop': poppedFavoriteId === pokemon.id }"
           :aria-pressed="isFavorite(pokemon.id)"
           :aria-label="favoriteLabel(pokemon, isFavorite(pokemon.id))"
-          @click.stop="emit('toggle-favorite', pokemon)"
+          @click.stop="onToggleFavorite(pokemon)"
         >
           <Star
             class="w-4 h-4"
