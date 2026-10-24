@@ -74,7 +74,7 @@ describe('App.vue', () => {
     const wrapper = mount(App)
     await flush()
 
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
 
     expect(wrapper.text()).toContain('Details failed')
@@ -118,7 +118,7 @@ describe('App.vue', () => {
     const wrapper = mount(App)
     await flush()
 
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
 
     expect(wrapper.text()).toContain('#25 pikachu')
@@ -147,7 +147,7 @@ describe('App.vue', () => {
 
     const wrapper = mount(App)
     await flush()
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
 
     expect(wrapper.text()).toContain('Height: 0.4 m')
@@ -173,7 +173,7 @@ describe('App.vue', () => {
 
     const wrapper = mount(App)
     await flush()
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
 
     const favoriteButton = wrapper.get('button[aria-label="Add to favorites"]')
@@ -211,7 +211,7 @@ describe('App.vue', () => {
 
     const wrapper = mount(App)
     await flush()
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
 
     expect(wrapper.get('button[aria-label="Remove from favorites"]').attributes('aria-pressed')).toBe('true')
@@ -242,7 +242,7 @@ describe('App.vue', () => {
 
     expect(wrapper.findAll('.list .item').map((button) => button.text())).toEqual(['#6', '#25 pikachu'])
 
-    await wrapper.get('button[aria-label="View Pokémon #6"]').trigger('click')
+    await wrapper.get('[aria-label="View Pokémon #6"]').trigger('click')
     await flush()
 
     expect(mockedFetchPokemonDetail).toHaveBeenCalledWith('6')
@@ -272,7 +272,7 @@ describe('App.vue', () => {
     expect(mockedFetchPokemonDetail).not.toHaveBeenCalled()
 
     await wrapper.get('.viewTabs button:last-child').trigger('click')
-    expect(wrapper.get('button[aria-label="View Pokémon #25 pikachu"] img').attributes('src'))
+    expect(wrapper.get('[aria-label="View Pokémon #25 pikachu"] img').attributes('src'))
       .toBe('pikachu-sprite')
 
     await wrapper.get('button[aria-label="Remove pikachu from favorites"]').trigger('click')
@@ -296,7 +296,7 @@ describe('App.vue', () => {
     await flush()
     await wrapper.get('.viewTabs button:last-child').trigger('click')
 
-    expect(wrapper.get('button[aria-label="View Pokémon #25 pikachu"] img').attributes('src'))
+    expect(wrapper.get('[aria-label="View Pokémon #25 pikachu"] img').attributes('src'))
       .toBe('pikachu-sprite')
     expect(JSON.parse(localStorage.getItem('pokemon-favorite-metadata')!)).toEqual([
       { id: 25, name: 'pikachu', spriteUrl: 'pikachu-sprite' },
@@ -339,7 +339,7 @@ describe('App.vue', () => {
 
     const wrapper = mount(App)
     await flush()
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
     await wrapper.findAll('button').find((button) => button.text() === 'Add to team')!.trigger('click')
 
@@ -377,7 +377,7 @@ describe('App.vue', () => {
 
     const wrapper = mount(App)
     await flush()
-    await wrapper.get('button.item').trigger('click')
+    await wrapper.get('.item').trigger('click')
     await flush()
 
     expect(wrapper.findAll('button').find((button) => button.text() === 'Team full')!.element.disabled).toBe(true)
