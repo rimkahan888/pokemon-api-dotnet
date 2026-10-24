@@ -11,7 +11,7 @@ public sealed class FrontendCorsOptions
         "http://localhost:4173"
     ];
 
-    public string[] AllowedOrigins { get; set; } = [..DefaultOrigins];
+    public string[] AllowedOrigins { get; set; } = [.. DefaultOrigins];
 
     public string[] ResolveOrigins()
     {
