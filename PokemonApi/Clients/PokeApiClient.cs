@@ -40,6 +40,12 @@ public class PokeApiClient(HttpClient httpClient, IOptions<PokeApiOptions>? opti
         var timeout = TimeSpan.FromSeconds(_options.RequestTimeoutSeconds > 0 ? _options.RequestTimeoutSeconds : 5);
         var backoffMs = _options.RetryBackoffMilliseconds > 0 ? _options.RetryBackoffMilliseconds : 200;
 
+        if (!httpClient.DefaultRequestHeaders.UserAgent.Any())
+        {
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "PokemonApi/1.0 (+https://github.com/rimkahan888/pokemon-api-dotnet)");
+        }
+
         for (var attempt = 1; attempt <= retryAttempts; attempt++)
         {
             try

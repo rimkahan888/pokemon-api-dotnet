@@ -12,9 +12,11 @@ public class PokeApiClientTests
     public async Task GetPokemonAsync_NormalizesNameAndDeserializesResponse()
     {
         Uri? requestedUri = null;
+        string? userAgent = null;
         using var httpClient = new HttpClient(new TestHttpMessageHandler((request, _) =>
         {
             requestedUri = request.RequestUri;
+            userAgent = request.Headers.UserAgent.ToString();
             return Task.FromResult(JsonResponse(
                 """{"id":25,"name":"mr-mime","sprites":{"front_default":"sprite.png"}}"""));
         }))
@@ -26,6 +28,7 @@ public class PokeApiClientTests
         var result = await client.GetPokemonAsync(" Mr Mime ", CancellationToken.None);
 
         Assert.Equal("https://pokeapi.co/api/v2/pokemon/mr%20mime", requestedUri?.AbsoluteUri);
+        Assert.Equal("PokemonApi/1.0 (+https://github.com/rimkahan888/pokemon-api-dotnet)", userAgent);
         Assert.NotNull(result);
         Assert.Equal(25, result.Id);
         Assert.Equal("mr-mime", result.Name);
