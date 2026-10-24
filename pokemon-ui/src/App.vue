@@ -488,9 +488,10 @@ onUnmounted(() => {
           <p><strong>Abilities:</strong> {{ selectedPokemon.abilities.join(', ') }}</p>
 
           <h4>Stats</h4>
-          <ul>
-            <li v-for="stat in selectedPokemon.stats" :key="stat.name">
-              {{ stat.name }}: {{ stat.value }}
+          <ul class="statList">
+            <li v-for="stat in selectedPokemon.stats" :key="stat.name" class="statRow">
+              <span>{{ stat.name }}: {{ stat.value }}</span>
+              <meter min="0" max="255" :value="stat.value" :aria-label="`${stat.name} base stat`"></meter>
             </li>
           </ul>
         </article>
