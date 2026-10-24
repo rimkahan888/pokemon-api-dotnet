@@ -135,7 +135,26 @@ select:focus-visible {
 }
 
 .error {
-  color: #c91616;
+  color: #b42318;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error {
+    color: #ffb4ab;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 1;
+  background: var(--color-background);
+  padding: 0.4rem 0.7rem;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
 }
 
 .detail {

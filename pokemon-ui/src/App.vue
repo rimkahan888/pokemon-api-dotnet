@@ -367,7 +367,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="layout">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div id="main-content" class="layout">
     <h1>Pokémon Data Explorer</h1>
 
     <section class="card">
@@ -380,7 +381,7 @@ onUnmounted(() => {
         >
         <button :disabled="detailLoading" type="submit">Search</button>
       </form>
-      <p v-if="detailError" class="error">{{ detailError }}</p>
+      <p v-if="detailError" class="error" role="alert">{{ detailError }}</p>
     </section>
 
     <div class="grid">
@@ -416,8 +417,8 @@ onUnmounted(() => {
           </select>
         </div>
 
-        <p v-if="viewMode === 'all' && listLoading" class="state">Loading list...</p>
-        <p v-else-if="viewMode === 'all' && listError" class="error">{{ listError }}</p>
+        <p v-if="viewMode === 'all' && listLoading" class="state" aria-live="polite">Loading list...</p>
+        <p v-else-if="viewMode === 'all' && listError" class="error" role="alert">{{ listError }}</p>
         <p v-else-if="viewMode === 'favorites' && favoriteIds.length === 0" class="state">No favorites yet.</p>
         <p v-else-if="viewMode === 'all' && list.length === 0 && !filterText.trim()" class="state">No Pokémon found.</p>
         <p v-else-if="filteredAndSortedList.length === 0" class="state">No Pokémon match current filter.</p>
@@ -459,7 +460,7 @@ onUnmounted(() => {
           <button v-if="selectedPokemon" type="button" @click="selectedPokemon = null">Back</button>
         </header>
 
-        <p v-if="detailLoading" class="state">Loading details...</p>
+        <p v-if="detailLoading" class="state" aria-live="polite">Loading details...</p>
         <p v-else-if="!selectedPokemon" class="state">Pick a Pokémon from the list or use search.</p>
 
         <article v-else class="detail">
