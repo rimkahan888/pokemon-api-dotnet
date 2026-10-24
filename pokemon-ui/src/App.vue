@@ -306,6 +306,16 @@ async function nextPage(): Promise<void> {
   await loadPage(currentPage.value + 1)
 }
 
+function retryList(): void {
+  void loadPage(currentPage.value || 1)
+}
+
+function retryDetail(): void {
+  const query = search.value.trim()
+  if (!query) return
+  void loadPokemon(query)
+}
+
 onMounted(async () => {
   await loadPage(1)
 })
@@ -381,7 +391,10 @@ onUnmounted(() => {
         >
         <button :disabled="detailLoading" type="submit">Search</button>
       </form>
-      <p v-if="detailError" class="error" role="alert">{{ detailError }}</p>
+      <div v-if="detailError" class="errorBanner">
+        <p class="error" role="alert">{{ detailError }}</p>
+        <button v-if="search.trim()" type="button" aria-label="Retry loading Pokémon details" @click="retryDetail">Try again</button>
+      </div>
     </section>
 
     <div class="grid">
@@ -418,7 +431,10 @@ onUnmounted(() => {
         </div>
 
         <p v-if="viewMode === 'all' && listLoading" class="state" aria-live="polite">Loading list...</p>
-        <p v-else-if="viewMode === 'all' && listError" class="error" role="alert">{{ listError }}</p>
+        <div v-else-if="viewMode === 'all' && listError" class="errorBanner">
+          <p class="error" role="alert">{{ listError }}</p>
+          <button type="button" aria-label="Retry loading the Pokémon list" @click="retryList">Try again</button>
+        </div>
         <p v-else-if="viewMode === 'favorites' && favoriteIds.length === 0" class="state">No favorites yet.</p>
         <p v-else-if="viewMode === 'all' && list.length === 0 && !filterText.trim()" class="state">No Pokémon found.</p>
         <p v-else-if="filteredAndSortedList.length === 0" class="state">No Pokémon match current filter.</p>

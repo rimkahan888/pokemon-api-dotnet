@@ -39,6 +39,26 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('List failed')
   })
 
+  it('retries a failed list request', async () => {
+    mockedFetchPokemonPage
+      .mockRejectedValueOnce(new Error('List failed'))
+      .mockResolvedValueOnce({
+        page: 1,
+        size: 20,
+        totalCount: 1,
+        totalPages: 1,
+        items: [{ id: 1, name: 'bulbasaur', spriteUrl: 'sprite' }],
+      })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('button[aria-label="Retry loading the Pokémon list"]').trigger('click')
+    await flush()
+
+    expect(wrapper.text()).toContain('#1 bulbasaur')
+    expect(mockedFetchPokemonPage).toHaveBeenCalledTimes(2)
+  })
+
   it('shows detail error when selected pokemon request fails', async () => {
     mockedFetchPokemonPage.mockResolvedValue({
       page: 1,
