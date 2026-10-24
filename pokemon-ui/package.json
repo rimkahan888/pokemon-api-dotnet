@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.5",
-    "@types/node": "^24.13.4",
+    "@types/node": "^26.6.5",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.9.1",
