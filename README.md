@@ -1,6 +1,15 @@
 # Pokémon Data Explorer
 
-Planning-first project to build a C# backend integrated with PokéAPI and a Vue frontend.
+[![CI](https://github.com/rimkahan888/pokemon-api-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/rimkahan888/pokemon-api-dotnet/actions/workflows/ci.yml)
+
+`pokemon-api-dotnet` is an ASP.NET Core Web API and Vue 3 frontend for browsing Pokémon from [PokéAPI](https://pokeapi.co/). Search by name or ID, page through the catalog, save favorites, and build a team of six.
+
+## Clone
+
+```bash
+git clone https://github.com/rimkahan888/pokemon-api-dotnet.git
+cd pokemon-api-dotnet
+```
 
 ## Stack
 - Backend: ASP.NET Core Web API
@@ -9,10 +18,19 @@ Planning-first project to build a C# backend integrated with PokéAPI and a Vue 
 
 ## Features (MVP)
 - Search Pokémon by name or ID
-- Paginated Pokémon list
+- Paginated Pokémon list and catalog-wide search
 - Pokémon detail panel (types, abilities, stats, sprite)
+- Favorites and a six-Pokémon team with type coverage and shared weaknesses
 - Backend caching and retry/timeout handling for PokéAPI calls
 - Loading/error states in frontend
+
+## Architecture
+
+```text
+pokemon-ui (Vue) -- /api --> PokemonController --> PokemonService --> PokeApiClient --> PokéAPI
+```
+
+The Vue app calls same-origin `/api` routes. In development, Vite proxies those requests to the API on port 5010. `PokemonController` checks page, size, and search input. `PokemonService` maps PokéAPI payloads into the DTOs the UI renders and caches list, detail, and catalog responses in memory. `PokeApiClient` applies the configured timeout and retries transient upstream failures. Favorites and the team roster stay in the browser's `localStorage`.
 
 ## Screenshot
 
@@ -55,8 +73,4 @@ Frontend runs on Vite and proxies `/api/*` requests to `http://localhost:5010`; 
 - `GET /health`
 - `GET /api/pokemon/{nameOrId}`
 - `GET /api/pokemon?page={n}&size={m}`
-
-
-
-
-
+- `GET /api/pokemon?search={query}&page={n}&size={m}` — catalog search by name or ID. `page` is at least 1 and `size` is from 1 to 100.
