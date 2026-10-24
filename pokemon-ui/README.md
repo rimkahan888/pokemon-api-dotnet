@@ -1,6 +1,6 @@
 # Pokémon Data Explorer frontend
 
-This Vue 3 application uses Vite and TypeScript to browse a paginated Pokémon list, search by name or ID, and view Pokémon details and favorites.
+This Vue 3 application uses Vite and TypeScript to browse a paginated Pokémon list, search by name or ID, and view Pokémon details and favorites. Screenshots of the animated explorer are in the repository [Gallery](../README.md#gallery).
 
 ## Requirements
 

@@ -1,22 +1,35 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import AmbientBackground from '@/components/AmbientBackground.vue'
+import HeaderNav from '@/components/HeaderNav.vue'
+import PokemonCatalog from '@/components/PokemonCatalog.vue'
+import PokemonDetailCard from '@/components/PokemonDetailCard.vue'
+import PokemonTeam from '@/components/PokemonTeam.vue'
 import { fetchPokemonDetail, fetchPokemonPage } from '@/services/pokemonApi'
-import { analyzeTeam } from '@/services/teamAnalysis'
-import type { PokemonDetail, PokemonSummary } from '@/types/pokemon'
+import {
+  loadFavoriteIds,
+  loadFavoriteMetadata,
+  loadTeam,
+  saveFavoriteIds,
+  saveFavoriteMetadata,
+  saveTeam as persistTeam,
+} from '@/services/storage'
+import type { PokemonSummary } from '@/types/pokemon'
 
 const pageSize = 20
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalCount = ref(0)
 const list = ref<PokemonSummary[]>([])
-const selectedPokemon = ref<PokemonDetail | null>(null)
+const selectedPokemon = ref<Awaited<ReturnType<typeof fetchPokemonDetail>> | null>(null)
 const favoriteIds = ref(loadFavoriteIds())
-const favoriteMetadata = ref(loadFavoriteMetadata())
+const favoriteMetadata = ref(loadFavoriteMetadata().filter((pokemon) => favoriteIds.value.includes(pokemon.id)))
 const team = ref(loadTeam())
 const listLoading = ref(false)
 const detailLoading = ref(false)
 const listError = ref('')
 const detailError = ref('')
+const searchValidation = ref('')
 const viewMode = ref<'all' | 'favorites'>('all')
 const search = ref('')
 const filterText = ref('')
@@ -28,15 +41,12 @@ const suppressDebouncedSearch = ref(false)
 let latestDetailRequest = 0
 let latestListRequest = 0
 
-const hasPrev = computed(() => currentPage.value > 1)
-const hasNext = computed(() => currentPage.value < totalPages.value)
 const selectedPokemonIsFavorite = computed(() =>
   selectedPokemon.value !== null && favoriteIds.value.includes(selectedPokemon.value.id),
 )
 const selectedPokemonIsOnTeam = computed(() =>
   selectedPokemon.value !== null && team.value.some((pokemon) => pokemon.id === selectedPokemon.value?.id),
 )
-const teamAnalysis = computed(() => analyzeTeam(team.value))
 const activeList = computed<PokemonSummary[]>(() => {
   if (viewMode.value === 'all') {
     return list.value
@@ -139,10 +149,11 @@ async function loadPokemon(nameOrId: string): Promise<void> {
 async function searchPokemon(): Promise<void> {
   const query = search.value.trim()
   if (!query) {
-    detailError.value = 'Enter a Pokémon name or ID.'
+    searchValidation.value = 'Enter a Pokémon name or ID.'
     return
   }
 
+  searchValidation.value = ''
   if (detailDebounceHandle.value) {
     clearTimeout(detailDebounceHandle.value)
     detailDebounceHandle.value = null
@@ -154,6 +165,7 @@ async function searchPokemon(): Promise<void> {
 async function viewPokemon(id: number): Promise<void> {
   suppressDebouncedSearch.value = true
   search.value = `${id}`
+  searchValidation.value = ''
   try {
     await loadPokemon(`${id}`)
   } finally {
@@ -174,12 +186,8 @@ function toggleFavorite(pokemon: PokemonSummary): void {
         spriteUrl: pokemon.spriteUrl,
       }]
 
-  try {
-    localStorage.setItem('pokemon-favorite-ids', JSON.stringify(favoriteIds.value))
-    localStorage.setItem('pokemon-favorite-metadata', JSON.stringify(favoriteMetadata.value))
-  } catch {
-    // Keep the current session usable when browser storage is unavailable.
-  }
+  saveFavoriteIds(favoriteIds.value)
+  saveFavoriteMetadata(favoriteMetadata.value)
 }
 
 function saveKnownFavoriteMetadata(): void {
@@ -193,23 +201,19 @@ function saveKnownFavoriteMetadata(): void {
     ...knownFavorites,
   ]
 
-  try {
-    localStorage.setItem('pokemon-favorite-metadata', JSON.stringify(favoriteMetadata.value))
-  } catch {
-    // Keep the current session usable when browser storage is unavailable.
-  }
+  saveFavoriteMetadata(favoriteMetadata.value)
 }
 
 function addToTeam(): void {
   if (!selectedPokemon.value || selectedPokemonIsOnTeam.value || team.value.length >= 6) return
 
   team.value = [...team.value, selectedPokemon.value]
-  saveTeam()
+  persistTeam(team.value)
 }
 
 function removeFromTeam(id: number): void {
   team.value = team.value.filter((pokemon) => pokemon.id !== id)
-  saveTeam()
+  persistTeam(team.value)
 }
 
 function moveTeamMember(id: number, direction: -1 | 1): void {
@@ -223,87 +227,30 @@ function moveTeamMember(id: number, direction: -1 | 1): void {
   reordered.splice(index, 1)
   reordered.splice(targetIndex, 0, member)
   team.value = reordered
-  saveTeam()
+  persistTeam(team.value)
 }
 
-function saveTeam(): void {
-  try {
-    localStorage.setItem('pokemon-team', JSON.stringify(team.value))
-  } catch {
-    // Keep the current session usable when browser storage is unavailable.
-  }
+function moveTeamMemberByIndex(index: number, direction: -1 | 1): void {
+  const member = team.value[index]
+  if (!member) return
+  moveTeamMember(member.id, direction)
 }
 
-function loadTeam(): PokemonDetail[] {
-  try {
-    const stored = localStorage.getItem('pokemon-team')
-    const parsed: unknown = stored ? JSON.parse(stored) : []
-
-    if (!Array.isArray(parsed)) return []
-
-    const validPokemon = parsed.filter((pokemon): pokemon is PokemonDetail =>
-      typeof pokemon === 'object'
-      && pokemon !== null
-      && Number.isSafeInteger(pokemon.id)
-      && pokemon.id > 0
-      && typeof pokemon.name === 'string'
-      && Array.isArray(pokemon.types)
-      && pokemon.types.every((type: unknown) => typeof type === 'string')
-      && Array.isArray(pokemon.abilities)
-      && Array.isArray(pokemon.stats)
-      && typeof pokemon.spriteUrl === 'string',
-    )
-
-    return [...new Map(validPokemon.map((pokemon) => [pokemon.id, pokemon])).values()].slice(0, 6)
-  } catch {
-    return []
-  }
+function retryList(): void {
+  void loadPage(currentPage.value || 1)
 }
 
-function loadFavoriteIds(): number[] {
-  try {
-    const stored = localStorage.getItem('pokemon-favorite-ids')
-    const parsed: unknown = stored ? JSON.parse(stored) : []
-
-    if (!Array.isArray(parsed)) return []
-
-    return [...new Set(parsed.filter(
-      (id): id is number => Number.isSafeInteger(id) && id > 0,
-    ))]
-  } catch {
-    return []
-  }
+function retryDetail(): void {
+  const query = search.value.trim()
+  if (!query) return
+  void loadPokemon(query)
 }
 
-function loadFavoriteMetadata(): PokemonSummary[] {
-  try {
-    const stored = localStorage.getItem('pokemon-favorite-metadata')
-    const parsed: unknown = stored ? JSON.parse(stored) : []
-
-    if (!Array.isArray(parsed)) return []
-
-    return [...new Map(parsed.filter((pokemon): pokemon is PokemonSummary =>
-      typeof pokemon === 'object'
-      && pokemon !== null
-      && Number.isSafeInteger(pokemon.id)
-      && pokemon.id > 0
-      && favoriteIds.value.includes(pokemon.id)
-      && typeof pokemon.name === 'string'
-      && typeof pokemon.spriteUrl === 'string',
-    ).map((pokemon) => [pokemon.id, pokemon])).values()]
-  } catch {
-    return []
-  }
-}
-
-async function prevPage(): Promise<void> {
-  if (!hasPrev.value || listLoading.value) return
-  await loadPage(currentPage.value - 1)
-}
-
-async function nextPage(): Promise<void> {
-  if (!hasNext.value || listLoading.value) return
-  await loadPage(currentPage.value + 1)
+function scrollToTeam(): void {
+  const section = document.getElementById('team-section')
+  if (!section) return
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  section.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
 }
 
 onMounted(async () => {
@@ -341,6 +288,7 @@ watch(search, (value) => {
 
   const query = value.trim()
   detailError.value = ''
+  searchValidation.value = ''
 
   if (detailDebounceHandle.value) {
     clearTimeout(detailDebounceHandle.value)
@@ -367,188 +315,62 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="layout">
-    <h1>Pokémon Data Explorer</h1>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <AmbientBackground />
+  <div class="relative z-10 min-h-screen">
+    <HeaderNav
+      v-model="search"
+      :team-count="team.length"
+      :validation-error="searchValidation"
+      @submit="searchPokemon"
+      @scroll-to-team="scrollToTeam"
+    />
 
-    <section class="card">
-      <form class="search" @submit.prevent="searchPokemon">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search by name or ID"
-          aria-label="Search Pokémon"
-        >
-        <button :disabled="detailLoading" type="submit">Search</button>
-      </form>
-      <p v-if="detailError" class="error">{{ detailError }}</p>
-    </section>
-
-    <div class="grid">
-      <section class="card">
-        <header class="sectionHeader">
-          <h2>{{ viewMode === 'all' ? 'Pokémon List' : 'Favorites' }}</h2>
-          <p>{{ viewMode === 'all' ? `${totalCount} total` : `${favoriteIds.length} saved` }}</p>
-        </header>
-        <div class="viewTabs" role="group" aria-label="Pokémon collection">
-          <button
-            type="button"
-            :aria-pressed="viewMode === 'all'"
-            @click="viewMode = 'all'"
-          >All Pokémon</button>
-          <button
-            type="button"
-            :aria-pressed="viewMode === 'favorites'"
-            @click="viewMode = 'favorites'"
-          >Favorites</button>
-        </div>
-        <div class="controls">
-          <input
-            v-model="filterText"
-            type="text"
-            placeholder="Search full catalog by name or ID"
-            aria-label="Search Pokémon catalog"
-          >
-          <select v-model="sortBy" aria-label="Sort Pokémon list">
-            <option value="id-asc">ID (Ascending)</option>
-            <option value="id-desc">ID (Descending)</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-          </select>
+    <main id="main-content" class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+      <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
+        <div class="lg:col-span-3">
+          <PokemonCatalog
+            v-model:active-tab="viewMode"
+            v-model:search-query="filterText"
+            v-model:sort-option="sortBy"
+            :items="filteredAndSortedList"
+            :page="currentPage"
+            :total-pages="totalPages"
+            :total-count="viewMode === 'all' ? totalCount : favoriteIds.length"
+            :is-loading="viewMode === 'all' && listLoading"
+            :error="viewMode === 'all' ? listError : ''"
+            :favorite-ids="favoriteIds"
+            :selected-pokemon-id="selectedPokemon?.id ?? null"
+            @change-page="loadPage"
+            @select-pokemon="viewPokemon($event.id)"
+            @toggle-favorite="toggleFavorite"
+            @retry="retryList"
+          />
         </div>
 
-        <p v-if="viewMode === 'all' && listLoading" class="state">Loading list...</p>
-        <p v-else-if="viewMode === 'all' && listError" class="error">{{ listError }}</p>
-        <p v-else-if="viewMode === 'favorites' && favoriteIds.length === 0" class="state">No favorites yet.</p>
-        <p v-else-if="viewMode === 'all' && list.length === 0 && !filterText.trim()" class="state">No Pokémon found.</p>
-        <p v-else-if="filteredAndSortedList.length === 0" class="state">No Pokémon match current filter.</p>
-
-        <ul v-else class="list">
-          <li v-for="pokemon in filteredAndSortedList" :key="pokemon.id">
-            <div class="listEntry">
-              <button
-                class="item"
-                type="button"
-                :aria-label="`View Pokémon #${pokemon.id}${pokemon.name ? ` ${pokemon.name}` : ''}`"
-                @click="viewPokemon(pokemon.id)"
-              >
-                <img v-if="pokemon.spriteUrl" :src="pokemon.spriteUrl" :alt="pokemon.name">
-                <span>#{{ pokemon.id }}{{ pokemon.name ? ` ${pokemon.name}` : '' }}</span>
-              </button>
-              <button
-                type="button"
-                :aria-pressed="favoriteIds.includes(pokemon.id)"
-                :aria-label="favoriteIds.includes(pokemon.id) ? `Remove ${pokemon.name || `Pokémon #${pokemon.id}`} from favorites` : `Add ${pokemon.name || `Pokémon #${pokemon.id}`} to favorites`"
-                @click="toggleFavorite(pokemon)"
-              >
-                {{ favoriteIds.includes(pokemon.id) ? '★' : '☆' }}
-              </button>
-            </div>
-          </li>
-        </ul>
-
-        <footer v-if="viewMode === 'all'" class="pager">
-          <button :disabled="!hasPrev || listLoading" type="button" @click="prevPage">Previous</button>
-          <span>Page {{ currentPage }} of {{ totalPages }}</span>
-          <button :disabled="!hasNext || listLoading" type="button" @click="nextPage">Next</button>
-        </footer>
-      </section>
-
-      <section class="card">
-        <header class="sectionHeader">
-          <h2>Pokémon Details</h2>
-          <button v-if="selectedPokemon" type="button" @click="selectedPokemon = null">Back</button>
-        </header>
-
-        <p v-if="detailLoading" class="state">Loading details...</p>
-        <p v-else-if="!selectedPokemon" class="state">Pick a Pokémon from the list or use search.</p>
-
-        <article v-else class="detail">
-          <img :src="selectedPokemon.spriteUrl" :alt="selectedPokemon.name">
-          <h3>#{{ selectedPokemon.id }} {{ selectedPokemon.name }}</h3>
-          <button
-            type="button"
-            :aria-pressed="selectedPokemonIsFavorite"
-            :aria-label="selectedPokemonIsFavorite ? 'Remove from favorites' : 'Add to favorites'"
-            @click="toggleFavorite(selectedPokemon)"
-          >
-            {{ selectedPokemonIsFavorite ? '★ Favorite' : '☆ Add to favorites' }}
-          </button>
-          <button
-            type="button"
-            :disabled="selectedPokemonIsOnTeam || team.length >= 6"
-            @click="addToTeam"
-          >
-            {{ selectedPokemonIsOnTeam ? 'On team' : team.length >= 6 ? 'Team full' : 'Add to team' }}
-          </button>
-          <p v-if="team.length >= 6 && !selectedPokemonIsOnTeam" class="state">
-            Your team is full. Remove a Pokémon to add another.
-          </p>
-
-          <p><strong>Types:</strong> {{ selectedPokemon.types.join(', ') }}</p>
-          <p><strong>Abilities:</strong> {{ selectedPokemon.abilities.join(', ') }}</p>
-
-          <h4>Stats</h4>
-          <ul>
-            <li v-for="stat in selectedPokemon.stats" :key="stat.name">
-              {{ stat.name }}: {{ stat.value }}
-            </li>
-          </ul>
-        </article>
-      </section>
-    </div>
-
-    <section class="card teamSection" aria-labelledby="team-heading">
-      <header class="sectionHeader">
-        <h2 id="team-heading">My Team</h2>
-        <p aria-live="polite">{{ team.length }} / 6 Pokémon</p>
-      </header>
-      <p v-if="team.length === 0" class="state">Your team is empty. Select a Pokémon and add it to your team.</p>
-      <div v-else class="teamContent">
-        <ul class="teamList" aria-label="Team members">
-          <li v-for="(pokemon, index) in team" :key="pokemon.id" class="teamMember">
-            <img :src="pokemon.spriteUrl" :alt="`${pokemon.name} artwork`">
-            <div class="teamMemberInfo">
-              <strong>#{{ pokemon.id }} {{ pokemon.name }}</strong>
-              <p>{{ pokemon.types.join(', ') }}</p>
-            </div>
-            <div class="teamActions">
-              <button
-                type="button"
-                :disabled="index === 0"
-                :aria-label="`Move ${pokemon.name} up`"
-                @click="moveTeamMember(pokemon.id, -1)"
-              >↑</button>
-              <button
-                type="button"
-                :disabled="index === team.length - 1"
-                :aria-label="`Move ${pokemon.name} down`"
-                @click="moveTeamMember(pokemon.id, 1)"
-              >↓</button>
-              <button
-                type="button"
-                :aria-label="`Remove ${pokemon.name} from team`"
-                @click="removeFromTeam(pokemon.id)"
-              >Remove</button>
-            </div>
-          </li>
-        </ul>
-
-        <section class="teamAnalysis" aria-labelledby="team-analysis-heading">
-          <h3 id="team-analysis-heading">Team type analysis</h3>
-          <p><strong>Type coverage:</strong> {{ teamAnalysis.coverage.length }} of 18 types</p>
-          <ul class="typeList" aria-label="Types represented in team">
-            <li v-for="type in teamAnalysis.coverage" :key="type">{{ type }}</li>
-          </ul>
-          <h4>Shared weaknesses</h4>
-          <ul v-if="teamAnalysis.sharedWeaknesses.length" class="weaknessList">
-            <li v-for="weakness in teamAnalysis.sharedWeaknesses" :key="weakness.type">
-              <strong>{{ weakness.type }}</strong>: {{ weakness.pokemonNames.length }} Pokémon
-              ({{ weakness.pokemonNames.join(', ') }})
-            </li>
-          </ul>
-          <p v-else class="state">No shared weaknesses across two or more team members.</p>
-        </section>
+        <div class="lg:col-span-2">
+          <PokemonDetailCard
+            :pokemon="selectedPokemon"
+            :is-loading="detailLoading"
+            :error="detailError"
+            :is-favorite="selectedPokemonIsFavorite"
+            :is-on-team="selectedPokemonIsOnTeam"
+            :is-team-full="team.length >= 6"
+            @toggle-favorite="toggleFavorite"
+            @add-to-team="addToTeam"
+            @retry="retryDetail"
+          />
+        </div>
       </div>
-    </section>
+
+      <PokemonTeam
+        :team="team"
+        :selected-pokemon-id="selectedPokemon?.id ?? null"
+        @move-up="moveTeamMemberByIndex($event, -1)"
+        @move-down="moveTeamMemberByIndex($event, 1)"
+        @remove-member="removeFromTeam"
+        @select-pokemon="viewPokemon($event.id)"
+      />
+    </main>
   </div>
 </template>
