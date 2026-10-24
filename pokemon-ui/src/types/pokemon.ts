@@ -10,6 +10,8 @@ export interface PokemonDetail {
   abilities: string[]
   stats: PokemonStat[]
   spriteUrl: string
+  heightDecimeters?: number
+  weightHectograms?: number
 }
 
 export interface PokemonSummary {

@@ -296,6 +296,14 @@ function loadFavoriteMetadata(): PokemonSummary[] {
   }
 }
 
+function formatHeight(decimeters: number): string {
+  return `${(decimeters / 10).toFixed(1)} m`
+}
+
+function formatWeight(hectograms: number): string {
+  return `${(hectograms / 10).toFixed(1)} kg`
+}
+
 async function prevPage(): Promise<void> {
   if (!hasPrev.value || listLoading.value) return
   await loadPage(currentPage.value - 1)
@@ -486,6 +494,12 @@ onUnmounted(() => {
 
           <p><strong>Types:</strong> {{ selectedPokemon.types.join(', ') }}</p>
           <p><strong>Abilities:</strong> {{ selectedPokemon.abilities.join(', ') }}</p>
+          <p v-if="selectedPokemon.heightDecimeters != null">
+            <strong>Height:</strong> {{ formatHeight(selectedPokemon.heightDecimeters) }}
+          </p>
+          <p v-if="selectedPokemon.weightHectograms != null">
+            <strong>Weight:</strong> {{ formatWeight(selectedPokemon.weightHectograms) }}
+          </p>
 
           <h4>Stats</h4>
           <ul>

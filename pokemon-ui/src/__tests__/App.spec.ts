@@ -106,6 +106,34 @@ describe('App.vue', () => {
     expect(wrapper.text()).toContain('Abilities: static')
   })
 
+  it('shows height and weight when the detail payload includes them', async () => {
+    mockedFetchPokemonPage.mockResolvedValue({
+      page: 1,
+      size: 20,
+      totalCount: 1,
+      totalPages: 1,
+      items: [{ id: 25, name: 'pikachu', spriteUrl: 'sprite' }],
+    })
+    mockedFetchPokemonDetail.mockResolvedValue({
+      id: 25,
+      name: 'pikachu',
+      types: ['electric'],
+      abilities: ['static'],
+      stats: [],
+      spriteUrl: 'sprite',
+      heightDecimeters: 4,
+      weightHectograms: 60,
+    })
+
+    const wrapper = mount(App)
+    await flush()
+    await wrapper.get('button.item').trigger('click')
+    await flush()
+
+    expect(wrapper.text()).toContain('Height: 0.4 m')
+    expect(wrapper.text()).toContain('Weight: 6.0 kg')
+  })
+
   it('toggles a Pokémon favorite and persists favorite IDs', async () => {
     mockedFetchPokemonPage.mockResolvedValue({
       page: 1,
